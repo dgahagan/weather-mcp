@@ -3,12 +3,12 @@
 ## Project Overview
 Build an MCP (Model Context Protocol) server that provides weather data from NOAA's API to AI systems, with primary focus on Claude Code integration.
 
-## Phase 1: Project Setup & Research
+## Phase 1: Project Setup & Research ✅ COMPLETED
 
 ### 1.1 Initialize Project Structure
-- [ ] Initialize npm project with `package.json`
-- [ ] Set up TypeScript configuration (`tsconfig.json`)
-- [ ] Create basic directory structure:
+- [x] Initialize npm project with `package.json`
+- [x] Set up TypeScript configuration (`tsconfig.json`)
+- [x] Create basic directory structure:
   ```
   /src
     /tools          # MCP tool implementations
@@ -18,96 +18,95 @@ Build an MCP (Model Context Protocol) server that provides weather data from NOA
     index.ts        # Main server entry point
   /tests            # Test files
   ```
-- [ ] Install core dependencies:
+- [x] Install core dependencies:
   - `@modelcontextprotocol/sdk` - MCP SDK
   - `typescript` - TypeScript compiler
   - `tsx` - TypeScript execution
   - `axios` - HTTP client for NOAA API
 
 ### 1.2 Research NOAA API
-- [ ] Document NOAA Weather API endpoints:
+- [x] Document NOAA Weather API endpoints:
   - `api.weather.gov/points/{lat},{lon}` - Get forecast URLs for location
   - `api.weather.gov/gridpoints/{office}/{gridX},{gridY}/forecast` - Get forecast
   - `api.weather.gov/stations/{stationId}/observations` - Get observations
-- [ ] Understand API rate limits and requirements
-- [ ] Identify endpoints for historical data
-- [ ] Document data formats and response structures
-- [ ] Note any API keys or authentication requirements
+- [x] Understand API rate limits and requirements
+- [x] Identify endpoints for historical data
+- [x] Document data formats and response structures
+- [x] Note any API keys or authentication requirements
 
-## Phase 2: Core MCP Server Implementation
+## Phase 2: Core MCP Server Implementation ✅ COMPLETED
 
 ### 2.1 Server Bootstrap
-- [ ] Create main server file (`src/index.ts`)
-- [ ] Initialize MCP server with proper configuration
-- [ ] Implement server lifecycle (startup, shutdown)
-- [ ] Add error handling and logging
-- [ ] Set up stdin/stdout transport for MCP communication
+- [x] Create main server file (`src/index.ts`)
+- [x] Initialize MCP server with proper configuration
+- [x] Implement server lifecycle (startup, shutdown)
+- [x] Add error handling and logging
+- [x] Set up stdin/stdout transport for MCP communication
 
 ### 2.2 NOAA API Service Layer
-- [ ] Create `NOAAService` class (`src/services/noaa.ts`)
-- [ ] Implement location-to-forecast-URL resolution
-- [ ] Implement forecast data fetching
-- [ ] Implement observation/historical data fetching
-- [ ] Add retry logic and error handling
-- [ ] Add response caching (optional, for rate limit management)
-- [ ] Create type definitions for NOAA API responses
+- [x] Create `NOAAService` class (`src/services/noaa.ts`)
+- [x] Implement location-to-forecast-URL resolution
+- [x] Implement forecast data fetching
+- [x] Implement observation/historical data fetching
+- [x] Add retry logic and error handling
+- [x] Add response caching (optional, for rate limit management)
+- [x] Create type definitions for NOAA API responses
 
-## Phase 3: MCP Tools Implementation
+## Phase 3: MCP Tools Implementation ✅ MOSTLY COMPLETED
 
 ### 3.1 Tool: get_forecast
 **Purpose**: Get weather forecast for any location
 
 **Input Parameters**:
-- `location` (string): City, State format (e.g., "San Francisco, CA")
-- `latitude` (number, optional): Latitude coordinate
-- `longitude` (number, optional): Longitude coordinate
-- `periods` (number, optional): Number of forecast periods (default: 7)
+- `latitude` (number): Latitude coordinate (REQUIRED)
+- `longitude` (number): Longitude coordinate (REQUIRED)
+- `days` (number, optional): Number of days in forecast (default: 7)
 
 **Implementation**:
-- [ ] Define tool schema
-- [ ] Implement geocoding (if location string provided)
-- [ ] Call NOAA points API to get forecast URLs
-- [ ] Fetch and parse forecast data
-- [ ] Format response for AI consumption
-- [ ] Handle errors (invalid location, API failures)
+- [x] Define tool schema
+- [ ] Implement geocoding (if location string provided) - DEFERRED (requires external service)
+- [x] Call NOAA points API to get forecast URLs
+- [x] Fetch and parse forecast data
+- [x] Format response for AI consumption
+- [x] Handle errors (invalid location, API failures)
 
 ### 3.2 Tool: get_current_conditions
 **Purpose**: Get current weather conditions for a location
 
 **Input Parameters**:
-- `location` (string): City, State format
-- `latitude` (number, optional): Latitude coordinate
-- `longitude` (number, optional): Longitude coordinate
+- `latitude` (number): Latitude coordinate (REQUIRED)
+- `longitude` (number): Longitude coordinate (REQUIRED)
 
 **Implementation**:
-- [ ] Define tool schema
-- [ ] Find nearest weather station
-- [ ] Fetch latest observation data
-- [ ] Format current conditions (temp, humidity, wind, etc.)
-- [ ] Handle missing data gracefully
+- [x] Define tool schema
+- [x] Find nearest weather station
+- [x] Fetch latest observation data
+- [x] Format current conditions (temp, humidity, wind, etc.)
+- [x] Handle missing data gracefully
 
 ### 3.3 Tool: get_historical_weather
 **Purpose**: Get historical weather data for a location
 
 **Input Parameters**:
-- `location` (string): City, State format
-- `latitude` (number, optional): Latitude coordinate
-- `longitude` (number, optional): Longitude coordinate
+- `latitude` (number): Latitude coordinate (REQUIRED)
+- `longitude` (number): Longitude coordinate (REQUIRED)
 - `start_date` (string): ISO date string (YYYY-MM-DD)
 - `end_date` (string): ISO date string (YYYY-MM-DD)
-- `preset` (string, optional): "day", "week", "month" (alternative to date range)
+- `limit` (number, optional): Max observations (default: 168)
 
 **Implementation**:
-- [ ] Define tool schema
-- [ ] Find nearest weather station
-- [ ] Calculate date range from preset if provided
-- [ ] Fetch observation history from NOAA
-- [ ] Aggregate data by day/period
-- [ ] Format historical data for AI consumption
-- [ ] Handle data gaps and missing observations
+- [x] Define tool schema
+- [x] Find nearest weather station
+- [ ] Calculate date range from preset if provided - DEFERRED (not critical)
+- [x] Fetch observation history from NOAA
+- [x] Aggregate data by day/period
+- [x] Format historical data for AI consumption
+- [x] Handle data gaps and missing observations
 
-### 3.4 Tool: search_location (Helper)
+### 3.4 Tool: search_location (Helper) - DEFERRED
 **Purpose**: Convert location string to coordinates
+
+**Note**: This tool has been deferred. Users can use external geocoding services (Google Maps, etc.) to get coordinates, or AI assistants can look up coordinates for common locations. This keeps the MCP server focused on weather data.
 
 **Input Parameters**:
 - `location` (string): City, State or address
