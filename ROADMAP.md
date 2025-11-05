@@ -2,422 +2,594 @@
 
 This document outlines planned enhancements for future versions of the Weather MCP server.
 
+## Design Philosophy: Lean & Efficient
+
+**Core Principle:** Maximize functionality while minimizing token overhead and tool proliferation.
+
+- **Parameters over proliferation:** Enhance existing tools with parameters rather than creating new tools
+- **Clear semantic boundaries:** Each tool has ONE distinct purpose
+- **Token efficiency:** Keep total tools under 8-10 to minimize AI confusion and token costs
+- **User value first:** Prioritize features that enable natural AI conversations and safety
+
+### Token Budget Analysis
+
+**Current State (v0.1.2 with caching):**
+- 4 tools
+- ~700 tokens for tool definitions (0.35% of 200k context)
+
+**Target State (v1.0.0):**
+- 8-9 tools max
+- ~1,500 tokens for tool definitions (0.75% of 200k context)
+- **4x functionality increase with only 2x tool count**
+
+---
+
 ## Version Planning
 
-### v0.3.0 - Safety & Alerts (Target: Phase 1)
+### v0.3.0 - Enhanced Core Tools
 
-**Theme:** Critical safety features and quick wins
+**Theme:** Maximize existing tools, add critical safety feature
 
-#### Features
-1. **Weather Alerts Tool** 🔥 PRIORITY
-   - Expose NOAA `/alerts/active` endpoint
-   - Active watches, warnings, advisories
-   - Filter by location (point, state, zone)
-   - Severity levels, urgency, certainty
-   - **User Query:** "Are there any weather alerts in my area?"
-   - **Effort:** Low (1-2 days)
-   - **Impact:** High - Safety-critical feature
+**Goal:** Add substantial functionality without tool bloat
 
-2. **Hourly Forecast Tool**
-   - Expose existing `getHourlyForecast` method as MCP tool
-   - Hour-by-hour forecasts instead of 12-hour periods
-   - **User Query:** "Give me hourly temperatures for tomorrow"
-   - **Effort:** Very Low (< 1 day) - method already exists
-   - **Impact:** High - Better planning queries
-
-3. **Enhanced Current Conditions**
-   - Display heat index and wind chill (already in data)
-   - Show 24-hour max/min temperatures
-   - Include precipitation history (last 1/3/6 hours)
-   - Better cloud cover and visibility details
-   - **Effort:** Low (1 day)
-   - **Impact:** Medium - More complete weather picture
-
-4. **Precipitation Probability in Forecasts**
-   - Already available in API responses
-   - Add to forecast output formatting
-   - **User Query:** "What's the chance of rain tomorrow?"
-   - **Effort:** Very Low (< 1 day)
-   - **Impact:** Medium - Common user question
-
-**Total Effort:** ~1 week
-**Version Goal:** v0.3.0
-
----
-
-### v0.4.0 - Global Expansion (Target: Phase 2)
-
-**Theme:** Break US-only limitations, transform UX
-
-#### Features
-1. **Geocoding Integration** 🔥 PRIORITY
-   - Implement Open-Meteo Geocoding API
-   - Accept location names instead of requiring coordinates
-   - Support: "weather in Paris", "forecast for Tokyo"
-   - Return coordinates + location metadata
-   - **Effort:** Medium (2-3 days)
-   - **Impact:** Very High - Major UX improvement
-
-2. **Global Forecast Support**
-   - Implement Open-Meteo Weather Forecast API
-   - Up to 16-day forecasts worldwide
-   - Remove US-only limitation for forecasts
-   - Multiple weather models available
-   - **User Query:** "What's the forecast for London?"
-   - **Effort:** Medium (3-4 days)
-   - **Impact:** Very High - Opens to international users
-
-3. **Sunrise/Sunset Times**
-   - Add to daily forecasts using Open-Meteo data
-   - Daylight duration calculation
-   - **User Query:** "When's sunrise tomorrow?"
-   - **Effort:** Low (1 day)
-   - **Impact:** Medium - Useful for planning
-
-**Total Effort:** ~1.5 weeks
-**Version Goal:** v0.4.0
-
----
-
-### v0.5.0 - Health & Environment (Target: Phase 3)
-
-**Theme:** Air quality, fire weather, and health-related data
-
-#### Features
-1. **Air Quality Tool**
-   - Open-Meteo Air Quality API
-   - PM2.5, PM10, O3, NO2, SO2, CO
-   - Air quality index (AQI)
-   - UV index and aerosol data
-   - **User Query:** "What's the air quality in Beijing?"
-   - **Effort:** Medium (2-3 days)
-   - **Impact:** High - Health-relevant data
-
-2. **Fire Weather Indices**
-   - Expose NOAA fire weather data (61 variables available)
-   - Grassland fire danger index
-   - Haines index (atmospheric stability)
-   - Red flag threat index
-   - **User Query:** "What's the fire danger level today?"
-   - **Effort:** Medium (2-3 days)
-   - **Impact:** Medium-High - Critical in fire-prone areas
-
-3. **Advanced Heat/Cold Indices**
-   - Prominent display of heat index when >80°F
-   - Wind chill when <40°F
-   - Wet bulb globe temperature (WBGT) for outdoor work safety
-   - Apparent temperature
-   - **Effort:** Low (1 day)
-   - **Impact:** Medium - Safety-relevant
-
-**Total Effort:** ~1.5 weeks
-**Version Goal:** v0.5.0
-
----
-
-### v0.6.0 - Specialized Weather (Target: Phase 4)
-
-**Theme:** Marine, severe weather, and specialized use cases
-
-#### Features
-1. **Marine Weather Tool**
-   - Open-Meteo Marine API
-   - Wave height, period, direction
-   - Ocean currents, water temperature
-   - Swell data
-   - **User Query:** "Are conditions safe for boating?"
-   - **Effort:** Medium (3-4 days)
-   - **Impact:** Medium - Valuable for coastal users
-
-2. **Severe Weather Probabilities**
-   - Expose NOAA severe weather data
-   - Thunder probability
-   - Tropical storm/hurricane wind probabilities
-   - Wind gust potentials (20-60mph categories)
-   - Tornado potential
-   - **User Query:** "What's the probability of thunderstorms?"
-   - **Effort:** Medium (2-3 days)
-   - **Impact:** High - Safety-critical for severe weather
-
-3. **Advanced Forecast Variables Tool**
-   - Configurable parameter to request specific variables
-   - Visibility, ceiling height, sky cover
-   - Snow level, ice accumulation
-   - Mixing height (air quality)
-   - **User Query:** "What's the expected visibility tomorrow?"
-   - **Effort:** Medium (3-4 days)
-   - **Impact:** Medium - Specialized but valuable
-
-**Total Effort:** ~2 weeks
-**Version Goal:** v0.6.0
-
----
-
-## Future Considerations (v0.7.0+)
-
-### Long-term Enhancement Ideas
-
-#### Ensemble/Probabilistic Forecasts
-- Open-Meteo Ensemble API
-- Confidence intervals for forecasts
-- Multiple model run aggregation
-- Uncertainty quantification
-- **Use Case:** "What's the likelihood of rain between 2-4pm?"
-
-#### Climate Trends & Analysis
-- Open-Meteo Climate Change API
-- Historical trend analysis
-- Temperature anomalies
-- Long-term climate projections (decades)
-- **Use Case:** "How has average temperature changed over 50 years?"
-
-#### Flood Monitoring
-- Open-Meteo Flood API
-- River levels and flood predictions
-- **Use Case:** "Is there flood risk near the Mississippi?"
-
-#### Agricultural/Soil Data
-- Soil temperature at multiple depths
-- Soil moisture content
-- Evapotranspiration
-- Growing degree days
-- **Use Case:** "What's the soil temperature for planting?"
-
-#### Solar Radiation Data
-- Direct/diffuse/tilted radiation
-- Shortwave radiation
-- Sunshine duration
-- **Use Case:** "What's the solar energy potential today?" (renewable energy)
-
-#### Alert Subscriptions/Monitoring
-- Monitor for specific weather conditions
-- Proactive notifications when thresholds met
-- **Use Case:** "Alert me if temperature drops below freezing"
-
-#### Multi-Model Comparison
-- Allow selection of specific weather models
-- Compare forecasts from different models
-- Show model agreement/disagreement
-- **Use Case:** "What do different models predict for the hurricane path?"
-
----
-
-## Data Already Available But Not Exposed
-
-### NOAA API - Hidden in Current Responses
-- 61 forecast variables from `/gridpoints` endpoint
-- METAR raw messages (aviation weather)
-- Detailed cloud layer information
-- Station metadata (name, elevation)
-- Weather phenomena arrays (intensity, modifier, type)
-
-### Open-Meteo Historical API - Not Fully Utilized
-- Wet bulb temperature
-- Snow depth
-- Soil data (temperature, moisture at 4 depths)
-- Solar radiation (multiple types)
-- Boundary layer height
-- Vapor pressure deficit
-- 100m wind height data
-
----
-
-## Implementation Priorities
-
-### Tier 1 - High Impact, Low Effort (v0.3.0)
-1. Weather Alerts Tool ⭐⭐⭐
-2. Hourly Forecast Tool ⭐⭐⭐
-3. Enhanced Current Conditions ⭐⭐
-4. Precipitation Probability ⭐⭐
-
-### Tier 2 - High Impact, Medium Effort (v0.4.0)
-5. Geocoding Integration ⭐⭐⭐
-6. Global Forecast Support ⭐⭐⭐
-7. Sunrise/Sunset Times ⭐⭐
-
-### Tier 3 - Specialized, High Value (v0.5.0-v0.6.0)
-8. Air Quality Tool ⭐⭐⭐
-9. Fire Weather Indices ⭐⭐
-10. Marine Weather Tool ⭐⭐
-11. Severe Weather Probabilities ⭐⭐⭐
-
-### Tier 4 - Future Expansion (v0.7.0+)
-12. Ensemble Forecasts
-13. Climate Trends
-14. Flood Monitoring
-15. Agricultural/Soil Data
-16. Solar Radiation
-17. Alert Subscriptions
-
----
-
-## Technical Considerations
-
-### Architecture Enhancements Needed
-
-#### For v0.4.0 (Geocoding)
-- New service: `src/services/geocoding.ts`
-- Location name → coordinates resolution
-- Cache geocoding results indefinitely (locations don't move)
-- Reverse geocoding for coordinate → place name
-
-#### For v0.4.0+ (Global Forecasts)
-- New service methods in `openmeteo.ts` for forecast API
-- Intelligent routing: NOAA (US, detailed) vs Open-Meteo (global)
-- Unified response format between NOAA and Open-Meteo forecasts
-
-#### For v0.3.0+ (Alerts)
-- New service methods in `noaa.ts` for alerts endpoint
-- Alert severity classification and formatting
-- Consider alert caching (5-10 minute TTL)
-
-#### For v0.5.0+ (Air Quality)
-- New service: `src/services/airquality.ts` or extend `openmeteo.ts`
-- Health category mapping (Good/Moderate/Unhealthy/etc.)
-- AQI calculation and interpretation
-
-### Caching Strategy Updates
-
-**New TTL recommendations:**
-- Weather alerts: 5-10 minutes (updates frequently)
-- Geocoding results: Infinite (locations don't change)
-- Air quality: 1 hour (updates hourly)
-- Marine conditions: 1 hour (updates periodically)
-- Fire weather indices: 3-6 hours (updates less frequently)
-
-### Response Format Considerations
-
-**Enhanced current conditions output:**
-```markdown
-## Current Weather
-
-**Temperature:** 72°F
-**Feels Like:** 68°F (wind chill)  ← NEW
-**24hr High/Low:** 75°F / 52°F  ← NEW
-
-**Recent Precipitation:**  ← NEW
-- Last hour: 0.2 inches
-- Last 3 hours: 0.5 inches
+#### 1. Enhance `get_forecast` Tool (NO new tool)
+**Add parameters instead of creating separate tools:**
+```typescript
+get_forecast({
+  latitude: number,
+  longitude: number,
+  days?: 1-7,           // existing
+  granularity?: "daily" | "hourly",  // NEW: hourly vs daily periods
+  include_precipitation_probability?: boolean  // NEW: show rain chances
+})
 ```
 
-**Hourly forecast format:**
-```markdown
-## Hourly Forecast
+**What this adds:**
+- ✅ Hourly forecasts (hour-by-hour detail)
+- ✅ Precipitation probability in output
+- ✅ User can choose daily or hourly granularity
+- **Token cost:** +100 tokens to existing tool description
+- **New tools added:** 0
+- **User queries enabled:**
+  - "Give me hourly temperatures for tomorrow"
+  - "What's the chance of rain today?"
+  - "Show me hour-by-hour forecast"
 
-### 2:00 PM
-- Temperature: 75°F
-- Precipitation Chance: 20%  ← NEW
-- Wind: 10 mph SW
+**Implementation:**
+- Expose existing `getHourlyForecast()` method via parameter
+- Add precipitation probability to output formatting (already in API data)
+- Default to daily for backward compatibility
+
+#### 2. Enhance `get_current_conditions` Tool (NO new tool)
+**Improve output formatting without changing interface:**
+
+**What this adds:**
+- ✅ Heat index / wind chill (automatically when relevant)
+- ✅ 24-hour high/low temperatures
+- ✅ Recent precipitation (last 1/3/6 hours)
+- ✅ Better cloud cover and visibility details
+- **Token cost:** 0 (same tool description, better output)
+- **New tools added:** 0
+- **User queries improved:**
+  - "How hot does it feel?" → sees heat index
+  - "What was today's high?" → sees 24hr max/min
+
+**Implementation:**
+- Parse additional fields already in NOAA observation responses
+- Intelligent display: show heat index when >80°F, wind chill when <40°F
+- Format precipitation history from existing data
+
+#### 3. Add `get_alerts` Tool ⭐ NEW TOOL
+**Critical safety feature - warrants dedicated tool:**
+```typescript
+get_alerts({
+  latitude: number,
+  longitude: number,
+  active_only?: boolean  // default: true
+})
+```
+
+**What this adds:**
+- ✅ Active watches, warnings, advisories (NOAA)
+- ✅ Severity levels, urgency, certainty
+- ✅ Effective/expiration times
+- ✅ Affected areas and event types
+- **Token cost:** +200 tokens (new tool)
+- **New tools added:** 1
+- **User queries enabled:**
+  - "Are there any weather alerts in my area?"
+  - "Is there a tornado watch active?"
+  - "Show me weather warnings"
+
+**Why a separate tool:**
+- Distinct purpose (safety-critical)
+- Different data source (alerts endpoint)
+- Called in different contexts than forecast
+- High-priority queries that shouldn't be conflated
+
+**Summary for v0.3.0:**
+- **Tools added:** 1 (get_alerts)
+- **Tools enhanced:** 2 (get_forecast, get_current_conditions)
+- **Token cost:** ~300 tokens
+- **Effort:** ~1 week
+- **Value:** Safety + hourly forecasts + better current conditions
+
+---
+
+### v0.4.0 - Global Expansion & Location Intelligence
+
+**Theme:** Remove geographic limitations, enable natural location queries
+
+#### 1. Add `search_location` Tool ⭐ NEW TOOL
+**Enable natural location queries:**
+```typescript
+search_location({
+  query: string,        // "Paris", "Tokyo", "San Francisco, CA"
+  limit?: number        // max results, default: 5
+})
+```
+
+**What this adds:**
+- ✅ Location name → coordinates resolution
+- ✅ Reverse geocoding support
+- ✅ Multiple result handling
+- ✅ Location metadata (country, admin area, timezone)
+- **Token cost:** +150 tokens (new tool)
+- **New tools added:** 1
+- **User queries enabled:**
+  - "What's the weather in Paris?" (no coordinates needed!)
+  - "Find coordinates for Tokyo"
+  - "Weather in downtown Seattle"
+
+**Why a separate tool:**
+- Fundamentally different operation (search, not weather data)
+- May need to be called before other tools
+- Returns different data type (location metadata, not weather)
+- Enables conversational flow: search → forecast
+
+**Implementation:**
+- Use Open-Meteo Geocoding API (free, no API key)
+- Cache results indefinitely (locations don't move)
+- Return top matches with relevance scores
+
+#### 2. Enhance `get_forecast` for Global Coverage (NO new tool)
+**Add parameter for forecast source:**
+```typescript
+get_forecast({
+  latitude: number,
+  longitude: number,
+  days?: 1-16,          // EXPANDED: was 1-7, now supports 16-day
+  granularity?: "daily" | "hourly",
+  include_precipitation_probability?: boolean,
+  source?: "auto" | "noaa" | "openmeteo"  // NEW: optional source selection
+})
+```
+
+**What this adds:**
+- ✅ Global forecast support (Open-Meteo Forecast API)
+- ✅ Extended forecasts up to 16 days
+- ✅ International location forecasts
+- ✅ Automatic source selection (NOAA for US, Open-Meteo elsewhere)
+- **Token cost:** +50 tokens (update description)
+- **New tools added:** 0
+- **User queries enabled:**
+  - "What's the forecast for London?" (was US-only)
+  - "Give me a 10-day forecast for Tokyo"
+  - "Weather forecast for Sydney next week"
+
+**Implementation:**
+- Integrate Open-Meteo Forecast API
+- Intelligent routing: NOAA (US, more detailed) vs Open-Meteo (global)
+- Unified response format
+- Cache with appropriate TTL (2 hours)
+
+#### 3. Add Sunrise/Sunset to Forecasts (NO new tool)
+**Enhance daily forecast output:**
+- ✅ Sunrise/sunset times from Open-Meteo
+- ✅ Daylight duration
+- **Token cost:** 0 (just better output formatting)
+- **User queries improved:**
+  - "When's sunrise tomorrow?" → shown in forecast
+  - "How long is daylight?" → included automatically
+
+**Summary for v0.4.0:**
+- **Tools added:** 1 (search_location)
+- **Tools enhanced:** 1 (get_forecast)
+- **Token cost:** ~200 tokens
+- **Effort:** ~1.5 weeks
+- **Value:** Global forecasts + natural location queries + extended forecasts
+
+**Cumulative Total:**
+- **Tools:** 6 (was 4, added 2)
+- **Token overhead:** ~500 tokens
+- **Geographic coverage:** Global (was US-only)
+
+---
+
+### v0.5.0 - Health & Environment
+
+**Theme:** Air quality and health-related weather data
+
+#### 1. Add `get_air_quality` Tool ⭐ NEW TOOL
+**Health-relevant environmental data:**
+```typescript
+get_air_quality({
+  latitude: number,
+  longitude: number,
+  forecast?: boolean    // default: false (current), true for forecast
+})
+```
+
+**What this adds:**
+- ✅ Air quality index (AQI)
+- ✅ Pollutant levels (PM2.5, PM10, O3, NO2, SO2, CO)
+- ✅ UV index
+- ✅ Health recommendations based on AQI
+- ✅ Air quality forecasts
+- **Token cost:** +200 tokens (new tool)
+- **New tools added:** 1
+- **User queries enabled:**
+  - "What's the air quality in Beijing?"
+  - "Is it safe to exercise outside?"
+  - "What's the UV index today?"
+
+**Why a separate tool:**
+- Distinct health/environmental focus
+- Different data source (Open-Meteo Air Quality API)
+- Called independently from weather queries
+- Important for sensitive populations
+
+**Implementation:**
+- Use Open-Meteo Air Quality API
+- Map AQI to health categories (Good/Moderate/Unhealthy/etc.)
+- Cache for 1 hour (updates hourly)
+- Include health guidance in output
+
+#### 2. Enhance `get_current_conditions` with Fire Weather (NO new tool)
+**Add optional parameter for specialized data:**
+```typescript
+get_current_conditions({
+  latitude: number,
+  longitude: number,
+  include_fire_weather?: boolean  // NEW: show fire danger indices (US only)
+})
+```
+
+**What this adds:**
+- ✅ Fire danger indices (when requested)
+- ✅ Grassland fire danger index
+- ✅ Haines index (atmospheric stability)
+- ✅ Red flag warnings (via alerts integration)
+- **Token cost:** +50 tokens (update description)
+- **New tools added:** 0
+- **User queries enabled:**
+  - "What's the fire danger level?" (with parameter)
+  - "Is there fire weather risk?"
+
+**Implementation:**
+- Access NOAA gridpoint data (61 variables available)
+- Only fetch when parameter is true
+- Show prominence when danger is elevated
+
+**Summary for v0.5.0:**
+- **Tools added:** 1 (get_air_quality)
+- **Tools enhanced:** 1 (get_current_conditions)
+- **Token cost:** ~250 tokens
+- **Effort:** ~1.5 weeks
+- **Value:** Health data + fire weather awareness
+
+**Cumulative Total:**
+- **Tools:** 7 (was 4, added 3)
+- **Token overhead:** ~750 tokens
+
+---
+
+### v0.6.0 - Specialized Weather (Optional)
+
+**Theme:** Marine and severe weather for specialized use cases
+
+#### 1. Add `get_marine_conditions` Tool ⭐ NEW TOOL (Optional)
+**Coastal and ocean weather:**
+```typescript
+get_marine_conditions({
+  latitude: number,
+  longitude: number,
+  forecast?: boolean    // default: false (current), true for forecast
+})
+```
+
+**What this adds:**
+- ✅ Wave height, period, direction
+- ✅ Swell data
+- ✅ Ocean water temperature
+- ✅ Tidal information (if available)
+- **Token cost:** +200 tokens (new tool)
+- **New tools added:** 1
+- **User queries enabled:**
+  - "Are ocean conditions safe for boating?"
+  - "What's the wave height off California?"
+  - "Show me surf conditions"
+
+**Why optional:**
+- Specialized use case (coastal users only)
+- Could be integrated into get_forecast with parameter
+- Only add if user demand justifies
+
+**Implementation:**
+- Use Open-Meteo Marine API
+- Cache for 1 hour
+- Format for sailors/surfers/boaters
+
+#### 2. Enhance `get_forecast` with Severe Weather (NO new tool)
+**Add severe weather probabilities from NOAA:**
+```typescript
+get_forecast({
+  // ... existing parameters
+  include_severe_weather?: boolean  // NEW: thunderstorm/wind probabilities
+})
+```
+
+**What this adds:**
+- ✅ Thunder probability
+- ✅ Wind gust probabilities (20-60mph categories)
+- ✅ Tropical storm wind probabilities
+- **Token cost:** +50 tokens
+- **New tools added:** 0
+
+**Summary for v0.6.0:**
+- **Tools added:** 0-1 (marine_conditions optional)
+- **Tools enhanced:** 1 (get_forecast)
+- **Token cost:** ~50-250 tokens
+- **Effort:** ~1-2 weeks
+- **Value:** Marine weather + severe weather probabilities
+
+**Cumulative Total (if marine added):**
+- **Tools:** 8 (was 4, added 4)
+- **Token overhead:** ~1,000-1,250 tokens
+
+---
+
+## Final Tool Inventory (v1.0.0)
+
+### Core Tools (Always present)
+1. **`get_forecast`** - Future weather (enhanced: hourly, global, 16-day, severe weather)
+2. **`get_current_conditions`** - Current weather (enhanced: heat index, fire weather)
+3. **`get_historical_weather`** - Past weather (unchanged)
+4. **`get_alerts`** - Safety warnings ⭐ NEW
+5. **`search_location`** - Geocoding ⭐ NEW
+6. **`get_air_quality`** - Health data ⭐ NEW
+7. **`check_service_status`** - API health (enhanced: cache stats)
+
+### Optional Tools (Add based on demand)
+8. **`get_marine_conditions`** - Ocean/coastal weather ⭐ NEW (optional)
+
+**Total: 7-8 tools** (up from 4)
+**Token cost: ~1,000-1,500 tokens** (0.5-0.75% of 200k context)
+**Functionality increase: ~300%**
+
+---
+
+## Implementation Principles
+
+### 1. Parameters Over Proliferation
+❌ **BAD:** Create separate tools for variations
+```typescript
+get_daily_forecast()
+get_hourly_forecast()
+get_fire_forecast()
+get_extended_forecast()
+// Result: 4+ tools with overlapping purpose
+```
+
+✅ **GOOD:** One tool with parameters
+```typescript
+get_forecast({
+  granularity?: "daily" | "hourly",
+  include_fire_weather?: boolean,
+  days?: 1-16
+})
+// Result: 1 tool, 4x functionality
+```
+
+### 2. Enhance Before Creating
+**Before adding a new tool, ask:**
+1. Can this be a parameter on an existing tool?
+2. Can this be automatic output formatting?
+3. Does this have a truly distinct purpose?
+4. Would users call this separately from other weather queries?
+
+**Only create a new tool if:**
+- ✅ Fundamentally different operation (search vs weather data)
+- ✅ Different data source requiring separate API calls
+- ✅ Called in isolation (not always with other tools)
+- ✅ Distinct semantic purpose (safety alerts vs weather forecast)
+
+### 3. Intelligent Defaults
+**Don't make users specify everything:**
+- Auto-show heat index when >80°F
+- Auto-show wind chill when <40°F
+- Auto-select NOAA (US) vs Open-Meteo (international)
+- Auto-choose hourly (<3 days) vs daily (>3 days) for historical data
+
+### 4. Clear Descriptions with Semantic Triggers
+**Each tool description should:**
+- State ONE clear purpose
+- List common user queries that trigger it
+- Indicate when NOT to use it
+- Be concise (aim for <150 words)
+
+**Example:**
+```typescript
+name: "get_alerts",
+description: "Get active weather alerts (watches, warnings, advisories).
+Use when asked about: 'any alerts?', 'weather warnings?', 'is it safe?',
+'dangerous weather?'. Returns severity, urgency, and affected areas.
+For forecast data, use get_forecast instead."
 ```
 
 ---
 
-## User Query Patterns to Support
+## Token Efficiency Comparison
 
-### Currently Not Well-Supported
+### Original Roadmap (Rejected)
+- 15+ separate tools
+- ~3,500 tokens for tool definitions
+- High cognitive load on AI
+- Overlapping functionality
+- **Bloated and confusing**
 
-#### Safety & Alerts ❌
-- "Are there any weather warnings in my area?"
-- "Is there a tornado watch active?"
-- "Show me all weather alerts for California"
+### Revised Roadmap (This Document)
+- 7-8 tools total
+- ~1,000-1,500 tokens for tool definitions
+- Clear semantic boundaries
+- Parameter-based functionality
+- **Lean and efficient**
 
-#### Natural Location Queries ⚠️
-- "What's the weather in Paris?" (requires manual coordinates)
-- "Forecast for Tokyo" (not available - US only forecasts)
-- "Weather in downtown Seattle" (requires exact coordinates)
-
-#### Health & Safety ❌
-- "What's the air quality index?"
-- "Is the heat dangerous today?"
-- "What's the UV index?"
-
-#### Specialized Weather ❌
-- "What's the fire danger level?"
-- "Are marine conditions safe?"
-- "What are the surf conditions?"
-- "When's sunrise tomorrow?"
-
-#### Detailed Planning ⚠️
-- "Give me hourly temperatures for tomorrow" (method exists but not exposed)
-- "When will the rain start and stop?" (needs hourly + precipitation)
-
-#### Severe Weather ❌
-- "What's the probability of thunderstorms?"
-- "Are hurricane winds possible?"
-- "Show me the wind gust forecast"
+**Savings: 60% fewer tokens, 4x functionality increase per tool**
 
 ---
 
-## Testing Requirements
+## User Query Pattern Coverage
 
-### For Each New Feature
+### Safety & Alerts ✅
+- "Are there any weather warnings in my area?" → `get_alerts`
+- "Is there a tornado watch?" → `get_alerts`
+- "Is it safe to be outside?" → `get_alerts` + `get_air_quality`
 
-1. **Unit Tests**
-   - Service method tests with mocked API responses
-   - Cache behavior verification
-   - Error handling validation
+### Natural Location Queries ✅
+- "What's the weather in Paris?" → `search_location` + `get_forecast`
+- "Forecast for Tokyo" → `search_location` + `get_forecast`
 
-2. **Integration Tests**
-   - Real API connectivity tests
-   - End-to-end MCP tool invocation
-   - Multiple coordinate/location scenarios
+### Detailed Planning ✅
+- "Hourly temperatures for tomorrow" → `get_forecast(granularity="hourly")`
+- "When will rain start?" → `get_forecast(granularity="hourly", include_precipitation_probability=true)`
 
-3. **Documentation**
-   - Update README.md with new tools
-   - Add examples to TESTING_GUIDE.md
-   - Update CLIENT_SETUP.md if needed
+### Health & Safety ✅
+- "What's the air quality?" → `get_air_quality`
+- "Is it too hot to exercise?" → `get_current_conditions` (shows heat index)
+- "What's the UV index?" → `get_air_quality`
 
-4. **Manual Testing Scenarios**
-   - Test with actual AI conversations
-   - Verify natural language query handling
-   - Check error messages and edge cases
+### Specialized Weather ✅
+- "Fire danger level?" → `get_current_conditions(include_fire_weather=true)`
+- "Ocean conditions safe?" → `get_marine_conditions` (optional)
+- "Chance of thunderstorms?" → `get_forecast(include_severe_weather=true)`
+
+### Global Coverage ✅
+- "Forecast for London?" → `get_forecast` (auto-routes to Open-Meteo)
+- "10-day forecast for Sydney?" → `get_forecast(days=10)`
+
+---
+
+## Development Priorities
+
+### Phase 1: v0.3.0 (Priority: Critical)
+**Focus:** Safety and enhanced core functionality
+- Add `get_alerts` tool
+- Enhance `get_forecast` (hourly, precipitation probability)
+- Enhance `get_current_conditions` (heat index, 24hr max/min)
+- **Effort:** ~1 week
+- **Value:** Safety-critical + better forecasts
+
+### Phase 2: v0.4.0 (Priority: High)
+**Focus:** Global expansion and UX transformation
+- Add `search_location` tool (geocoding)
+- Enhance `get_forecast` (global support, 16-day)
+- Add sunrise/sunset to output
+- **Effort:** ~1.5 weeks
+- **Value:** Removes US limitation, natural conversations
+
+### Phase 3: v0.5.0 (Priority: Medium)
+**Focus:** Health and environment
+- Add `get_air_quality` tool
+- Enhance `get_current_conditions` (fire weather)
+- **Effort:** ~1.5 weeks
+- **Value:** Health-relevant data
+
+### Phase 4: v0.6.0 (Priority: Low)
+**Focus:** Specialized use cases
+- Optionally add `get_marine_conditions` tool
+- Enhance `get_forecast` (severe weather probabilities)
+- **Effort:** ~1-2 weeks
+- **Value:** Specialized but useful
+
+---
+
+## Testing Strategy
+
+### For Each Enhancement
+
+**1. Token Count Verification**
+- Measure actual token count of tool definitions
+- Ensure we stay under budget (~1,500 tokens total)
+- Test with Claude Code to verify no confusion
+
+**2. Backward Compatibility**
+- New parameters must be optional
+- Default behavior unchanged
+- Existing queries still work
+
+**3. AI Selection Accuracy**
+- Test common user queries
+- Verify AI picks correct tool
+- Check for tool confusion or multiple attempts
+
+**4. Functionality Testing**
+- Unit tests for new parameters
+- Integration tests with real APIs
+- Cache behavior verification
 
 ---
 
 ## Success Metrics
 
-### Per Version Goals
+### Token Efficiency
+- ✅ Stay under 1,500 tokens for all tool definitions
+- ✅ Less than 0.75% of 200k context budget
+- ✅ Average <200 tokens per tool description
 
-**v0.3.0 Success:**
-- Weather alerts functional for all US locations
-- Hourly forecasts provide hour-by-hour detail
-- Current conditions show "feels like" temperature
-- Precipitation probability visible in forecasts
+### Tool Count
+- ✅ Maximum 8 tools by v1.0.0
+- ✅ 2x tool count, 4x functionality
+- ✅ Each tool has clear, distinct purpose
 
-**v0.4.0 Success:**
-- Users can query by location name (no coordinates needed)
-- International forecasts available for major cities
-- Global coverage for all forecast types
+### User Experience
+- ✅ Natural language queries work without coordinates
+- ✅ Global coverage for forecasts and historical data
+- ✅ Safety alerts available and prominent
+- ✅ Health data accessible
 
-**v0.5.0 Success:**
-- Air quality data available for major global cities
-- Fire weather indices accessible for US locations
-- Health-related warnings display prominently
-
-**v0.6.0 Success:**
-- Marine weather supports coastal planning
-- Severe weather probabilities accessible
-- Advanced variables support specialized use cases
-
-### Overall Goals (v1.0.0)
-
-- **Geographic Coverage:** Global forecasts and historical data
-- **Safety:** Comprehensive alert system
-- **User Experience:** Natural language location queries
-- **Completeness:** 50%+ of available API data exposed
-- **Health:** Air quality and health-related indices
-- **Specialized:** Support for marine, fire, and severe weather
+### AI Performance
+- ✅ AI consistently selects correct tool
+- ✅ <10% retry rate due to wrong tool selection
+- ✅ Clear descriptions prevent confusion
 
 ---
 
-## Notes
+## Future Considerations (Post v1.0.0)
 
-- Prioritize features that enable natural AI conversations
-- Focus on safety-critical features first (alerts, severe weather)
-- Build on existing architecture (services, caching, error handling)
-- Maintain backward compatibility with existing tools
-- Document limitations clearly (e.g., some features US-only)
-- Consider rate limits when adding new API integrations
+### Features NOT in Roadmap (Intentionally)
+These are valuable but would add too many tools or tokens:
+
+❌ **Climate trends analysis** - Specialized, low frequency
+❌ **Flood monitoring** - Niche use case
+❌ **Agricultural/soil data** - Specialized audience
+❌ **Solar radiation** - Very specialized
+❌ **Alert subscriptions** - Requires persistent state
+❌ **Multi-model comparison** - Advanced feature
+
+**Why excluded:**
+- Would require additional tools (token bloat)
+- Specialized audiences (low benefit/cost ratio)
+- Can be added later based on user demand
+- Focus on 80/20 rule: 80% of value, 20% of tools
+
+### Possible v2.0.0 Direction
+If there's demand and we need to add more:
+- Consider breaking into multiple MCP servers by domain
+  - `weather-mcp` - Core weather (current focus)
+  - `weather-climate-mcp` - Climate analysis
+  - `weather-agriculture-mcp` - Agricultural data
+- This keeps each server lean and focused
 
 ---
 
@@ -425,15 +597,56 @@ This document outlines planned enhancements for future versions of the Weather M
 
 When implementing features from this roadmap:
 
-1. Create a feature branch: `feature/[feature-name]`
-2. Update relevant documentation
-3. Add tests for new functionality
-4. Update CHANGELOG.md
-5. Consider cache TTL for new data types
-6. Test with real AI conversation patterns
+### Must Do
+1. ✅ Verify token count doesn't exceed budget
+2. ✅ Add parameters to existing tools before creating new ones
+3. ✅ Write clear, concise tool descriptions (<150 words)
+4. ✅ Test AI tool selection with common queries
+5. ✅ Maintain backward compatibility
+
+### Should Do
+1. ✅ Include semantic trigger phrases in descriptions
+2. ✅ Use intelligent defaults to minimize parameters
+3. ✅ Cache appropriately for new data types
+4. ✅ Format output clearly and consistently
+
+### Must Not Do
+1. ❌ Add tools without checking if parameter can work
+2. ❌ Create overlapping tools with similar purposes
+3. ❌ Write verbose tool descriptions (token waste)
+4. ❌ Break backward compatibility for existing tools
+
+---
+
+## Appendix: Token Budget Breakdown
+
+### Current State (v0.1.2)
+| Tool | Approximate Tokens |
+|------|-------------------|
+| get_forecast | ~200 |
+| get_current_conditions | ~150 |
+| get_historical_weather | ~250 |
+| check_service_status | ~100 |
+| **Total** | **~700** |
+
+### Target State (v1.0.0)
+| Tool | Approximate Tokens | Change |
+|------|-------------------|--------|
+| get_forecast | ~300 | +100 (hourly, global, 16-day) |
+| get_current_conditions | ~200 | +50 (heat index, fire weather) |
+| get_historical_weather | ~250 | 0 (unchanged) |
+| get_alerts | ~200 | +200 (NEW) |
+| search_location | ~150 | +150 (NEW) |
+| get_air_quality | ~200 | +200 (NEW) |
+| check_service_status | ~100 | 0 (unchanged) |
+| get_marine_conditions | ~200 | +200 (NEW, optional) |
+| **Total** | **~1,400-1,600** | **+700-900** |
+
+**Final Overhead: ~1,500 tokens (0.75% of 200k context)**
 
 ---
 
 *Last Updated: 2025-11-05*
 *Current Version: v0.1.2 (with caching)*
-*Next Target: v0.3.0 - Safety & Alerts*
+*Next Target: v0.3.0 - Enhanced Core Tools*
+*Design Philosophy: Lean, efficient, user-focused*
