@@ -16,6 +16,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { NOAAService } from './services/noaa.js';
 import { OpenMeteoService } from './services/openmeteo.js';
+import { CacheConfig } from './config/cache.js';
 
 /**
  * Server information
@@ -546,6 +547,44 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           output += `- Check production status: https://open-meteo.com/en/docs/model-updates\n`;
           output += `- View GitHub issues: https://github.com/open-meteo/open-meteo/issues\n`;
           output += `- Review documentation: https://open-meteo.com/en/docs\n\n`;
+        }
+
+        // Cache Statistics
+        if (CacheConfig.enabled) {
+          output += `## Cache Statistics\n\n`;
+
+          const noaaStats = noaaService.getCacheStats();
+          const openMeteoStats = openMeteoService.getCacheStats();
+          const totalHits = noaaStats.hits + openMeteoStats.hits;
+          const totalMisses = noaaStats.misses + openMeteoStats.misses;
+          const totalRequests = totalHits + totalMisses;
+          const overallHitRate = totalRequests > 0 ? ((totalHits / totalRequests) * 100).toFixed(1) : '0.0';
+
+          output += `**Cache Status:** ✅ Enabled\n`;
+          output += `**Overall Hit Rate:** ${overallHitRate}%\n`;
+          output += `**Total Cache Hits:** ${totalHits}\n`;
+          output += `**Total Cache Misses:** ${totalMisses}\n`;
+          output += `**Total Requests:** ${totalRequests}\n\n`;
+
+          output += `### NOAA Service Cache\n`;
+          output += `- Entries: ${noaaStats.size} / ${noaaStats.maxSize}\n`;
+          output += `- Hit Rate: ${(noaaService as any).cache.getHitRate().toFixed(1)}%\n`;
+          output += `- Hits: ${noaaStats.hits}\n`;
+          output += `- Misses: ${noaaStats.misses}\n`;
+          output += `- Evictions: ${noaaStats.evictions}\n\n`;
+
+          output += `### Open-Meteo Service Cache\n`;
+          output += `- Entries: ${openMeteoStats.size} / ${openMeteoStats.maxSize}\n`;
+          output += `- Hit Rate: ${(openMeteoService as any).cache.getHitRate().toFixed(1)}%\n`;
+          output += `- Hits: ${openMeteoStats.hits}\n`;
+          output += `- Misses: ${openMeteoStats.misses}\n`;
+          output += `- Evictions: ${openMeteoStats.evictions}\n\n`;
+
+          output += `*Cache reduces API calls and improves performance for repeated queries.*\n\n`;
+        } else {
+          output += `## Cache Statistics\n\n`;
+          output += `**Cache Status:** ❌ Disabled\n`;
+          output += `*Set CACHE_ENABLED=true in environment to enable caching.*\n\n`;
         }
 
         // Overall status summary
