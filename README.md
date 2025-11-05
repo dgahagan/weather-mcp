@@ -11,6 +11,8 @@ An MCP (Model Context Protocol) server that provides weather data to AI systems 
 - **Historical Data**: Access historical weather observations for any location worldwide
   - Recent data (last 7 days): Detailed hourly observations from NOAA real-time API (US only)
   - Archival data (>7 days old): Hourly/daily weather data from 1940-present via Open-Meteo (global coverage)
+- **Service Status Checking**: Proactively verify API availability with health checks
+- **Enhanced Error Handling**: Detailed, actionable error messages with status page links
 
 ## Installation
 
@@ -91,7 +93,26 @@ All tools require latitude and longitude coordinates. You can find coordinates f
 
 ## Available Tools
 
-### 1. get_forecast
+### 1. check_service_status
+Check the operational status of weather APIs.
+
+**Parameters:** None
+
+**Description:**
+Performs health checks on both NOAA and Open-Meteo APIs to verify they are operational. Use this tool when experiencing errors or to proactively verify service availability before making weather data requests. Returns current status, helpful messages, and links to official status pages.
+
+**Example:**
+```
+Check if the weather services are operational
+```
+
+**Returns:**
+- Operational status for NOAA API (forecasts & current conditions)
+- Operational status for Open-Meteo API (historical data)
+- Status page links and recommended actions if issues are detected
+- Overall service availability summary
+
+### 2. get_forecast
 Get weather forecast for a location.
 
 **Parameters:**
@@ -104,7 +125,7 @@ Get weather forecast for a location.
 Get the weather forecast for San Francisco (latitude: 37.7749, longitude: -122.4194)
 ```
 
-### 2. get_current_conditions
+### 3. get_current_conditions
 Get current weather conditions for a location.
 
 **Parameters:**
@@ -116,7 +137,7 @@ Get current weather conditions for a location.
 What are the current weather conditions in New York? (latitude: 40.7128, longitude: -74.0060)
 ```
 
-### 3. get_historical_weather
+### 4. get_historical_weather
 Get historical weather observations for a location.
 
 **Parameters:**
@@ -174,6 +195,76 @@ If you get "No historical data available":
 - For older dates: Data should be available globally back to 1940
 - Note: Most recent data has a 5-day delay
 - Very recent dates (last 5 days) may not be available in archival data yet
+
+## Error Handling & Service Status
+
+### Enhanced Error Messages
+
+This MCP server provides detailed, actionable error messages when issues occur. All error messages include:
+
+- **Clear problem description** - What went wrong and why
+- **Contextual help** - Specific guidance based on the error type
+- **Status page links** - Direct links to official service status pages
+- **Recommended actions** - Concrete steps to resolve or investigate the issue
+
+**Example Error Messages:**
+
+When a service is down:
+```
+NOAA API server error: Service temporarily unavailable
+
+The NOAA Weather API may be experiencing an outage.
+
+Check service status:
+- Planned outages: https://weather-gov.github.io/api/planned-outages
+- Service notices: https://www.weather.gov/notification
+- Report issues: nco.ops@noaa.gov or (301) 683-1518
+```
+
+When rate limited:
+```
+Open-Meteo API rate limit exceeded (10,000 requests/day for non-commercial use).
+
+Please retry later or consider:
+- Reducing request frequency
+- Using daily instead of hourly data for longer periods
+- Upgrading to a commercial plan for higher limits
+
+More info: https://open-meteo.com/en/pricing
+```
+
+### Service Status Checking
+
+Use the `check_service_status` tool to proactively verify API availability:
+
+```
+# Query example
+"Check if the weather services are working"
+
+# Returns:
+- ✅/❌ Status for NOAA API (US forecasts & current conditions)
+- ✅/❌ Status for Open-Meteo API (global historical data)
+- Links to official status pages
+- Recommended actions if issues detected
+- Overall service availability summary
+```
+
+**When to use:**
+- Before making multiple weather requests
+- When experiencing errors or timeouts
+- To verify service availability after an outage
+- For monitoring and alerting purposes
+
+**Status Page Links:**
+- **NOAA API:**
+  - Planned outages: https://weather-gov.github.io/api/planned-outages
+  - Service notices: https://www.weather.gov/notification
+  - Report issues: https://weather-gov.github.io/api/reporting-issues
+
+- **Open-Meteo API:**
+  - Production status: https://open-meteo.com/en/docs/model-updates
+  - GitHub issues: https://github.com/open-meteo/open-meteo/issues
+  - Documentation: https://open-meteo.com/en/docs
 
 ## Testing
 

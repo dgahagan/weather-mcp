@@ -45,7 +45,7 @@ export class OpenMeteoService {
   }
 
   /**
-   * Handle API errors
+   * Handle API errors with helpful status information
    */
   private async handleError(error: AxiosError): Promise<never> {
     if (error.response) {
@@ -55,34 +55,78 @@ export class OpenMeteoService {
       // Bad request
       if (status === 400) {
         const reason = data.reason || 'Invalid request parameters';
-        throw new Error(`Open-Meteo API error: ${reason}`);
+        throw new Error(
+          `Open-Meteo API error: ${reason}\n\n` +
+          `Please verify:\n` +
+          `- Coordinates are valid (latitude: -90 to 90, longitude: -180 to 180)\n` +
+          `- Date range is valid (1940 to 5 days ago)\n` +
+          `- Parameters are correctly formatted\n\n` +
+          `API documentation: https://open-meteo.com/en/docs/historical-weather-api`
+        );
       }
 
       // Rate limit error
       if (status === 429) {
-        throw new Error('Open-Meteo API rate limit exceeded. Please retry later.');
+        throw new Error(
+          `Open-Meteo API rate limit exceeded (10,000 requests/day for non-commercial use).\n\n` +
+          `Please retry later or consider:\n` +
+          `- Reducing request frequency\n` +
+          `- Using daily instead of hourly data for longer periods\n` +
+          `- Upgrading to a commercial plan for higher limits\n\n` +
+          `More info: https://open-meteo.com/en/pricing`
+        );
       }
 
       // Server errors
       if (status >= 500) {
-        throw new Error('Open-Meteo API server error: Service temporarily unavailable');
+        throw new Error(
+          `Open-Meteo API server error: Service temporarily unavailable\n\n` +
+          `The Open-Meteo API may be experiencing an outage.\n\n` +
+          `Check service status:\n` +
+          `- Production status: https://open-meteo.com/en/docs/model-updates\n` +
+          `- GitHub issues: https://github.com/open-meteo/open-meteo/issues`
+        );
       }
 
       // Other errors
-      throw new Error(`Open-Meteo API error (${status}): ${data.reason || 'Request failed'}`);
+      throw new Error(
+        `Open-Meteo API error (${status}): ${data.reason || 'Request failed'}\n\n` +
+        `For assistance, visit:\n` +
+        `- API documentation: https://open-meteo.com/en/docs\n` +
+        `- GitHub issues: https://github.com/open-meteo/open-meteo/issues`
+      );
     }
 
     // Network errors
     if (error.code === 'ECONNABORTED') {
-      throw new Error('Request to Open-Meteo API timed out. Please try again.');
+      throw new Error(
+        `Request to Open-Meteo API timed out. Please try again.\n\n` +
+        `If timeouts persist, check:\n` +
+        `- Your internet connection\n` +
+        `- Service status: https://open-meteo.com/en/docs/model-updates`
+      );
     }
 
     if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
-      throw new Error('Unable to connect to Open-Meteo API. Please check your internet connection.');
+      throw new Error(
+        `Unable to connect to Open-Meteo API.\n\n` +
+        `Possible causes:\n` +
+        `- Internet connection issues\n` +
+        `- Open-Meteo API service outage\n` +
+        `- DNS resolution problems\n\n` +
+        `Check:\n` +
+        `- Your internet connection\n` +
+        `- Service status: https://open-meteo.com/en/docs/model-updates`
+      );
     }
 
     // Generic error
-    throw new Error(`Open-Meteo API request failed: ${error.message}`);
+    throw new Error(
+      `Open-Meteo API request failed: ${error.message}\n\n` +
+      `For assistance, visit:\n` +
+      `- GitHub issues: https://github.com/open-meteo/open-meteo/issues\n` +
+      `- Documentation: https://open-meteo.com/en/docs`
+    );
   }
 
   /**
@@ -111,6 +155,82 @@ export class OpenMeteoService {
         }
       }
       throw error;
+    }
+  }
+
+  /**
+   * Check if the Open-Meteo API is operational
+   * Performs a lightweight health check by requesting a simple query
+   * @returns Object with status information
+   */
+  async checkServiceStatus(): Promise<{
+    operational: boolean;
+    message: string;
+    statusPage: string;
+    timestamp: string;
+  }> {
+    try {
+      // Use a simple request for a recent date at a known location (London, UK)
+      // Using a 1-day range from 30 days ago to avoid the 5-day delay issue
+      const testDate = new Date();
+      testDate.setDate(testDate.getDate() - 30);
+      const dateStr = testDate.toISOString().split('T')[0];
+
+      const response = await this.client.get('/archive', {
+        params: {
+          latitude: 51.5074,
+          longitude: -0.1278,
+          start_date: dateStr,
+          end_date: dateStr,
+          daily: 'temperature_2m_max',
+          timezone: 'UTC'
+        },
+        timeout: 10000 // Shorter timeout for health check
+      });
+
+      if (response.status === 200 && response.data) {
+        return {
+          operational: true,
+          message: 'Open-Meteo API is operational',
+          statusPage: 'https://open-meteo.com/en/docs/model-updates',
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      return {
+        operational: false,
+        message: `Open-Meteo API returned unexpected status: ${response.status}`,
+        statusPage: 'https://open-meteo.com/en/docs/model-updates',
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      let message = 'Open-Meteo API may be experiencing issues';
+      let operational = false;
+
+      if (axiosError.response) {
+        const status = axiosError.response.status;
+        if (status === 429) {
+          operational = true; // API is up, just rate limited
+          message = 'Open-Meteo API is operational but rate limited';
+        } else if (status >= 500) {
+          message = 'Open-Meteo API is experiencing server errors (possible outage)';
+        } else if (status === 400) {
+          operational = true; // Bad request might indicate API is up but our test is wrong
+          message = 'Open-Meteo API is responding (health check may need adjustment)';
+        }
+      } else if (axiosError.code === 'ECONNABORTED') {
+        message = 'Open-Meteo API is not responding (timeout)';
+      } else if (axiosError.code === 'ENOTFOUND' || axiosError.code === 'ECONNREFUSED') {
+        message = 'Cannot connect to Open-Meteo API (DNS or connection failure)';
+      }
+
+      return {
+        operational,
+        message,
+        statusPage: 'https://open-meteo.com/en/docs/model-updates',
+        timestamp: new Date().toISOString()
+      };
     }
   }
 

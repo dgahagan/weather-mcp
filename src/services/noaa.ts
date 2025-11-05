@@ -50,7 +50,7 @@ export class NOAAService {
   }
 
   /**
-   * Handle API errors with retry logic
+   * Handle API errors with retry logic and helpful status information
    */
   private async handleError(error: AxiosError): Promise<never> {
     if (error.response) {
@@ -59,31 +59,72 @@ export class NOAAService {
 
       // Rate limit error - suggest retry
       if (status === 429) {
-        throw new Error(`NOAA API rate limit exceeded. Please retry in a few seconds. (${data.detail || 'Too many requests'})`);
+        throw new Error(
+          `NOAA API rate limit exceeded. Please retry in a few seconds.\n\n` +
+          `Details: ${data.detail || 'Too many requests'}\n\n` +
+          `For more information about rate limits, visit:\n` +
+          `https://weather-gov.github.io/api/`
+        );
       }
 
       // Other client errors
       if (status >= 400 && status < 500) {
-        throw new Error(`NOAA API error: ${data.detail || data.title || 'Invalid request'}`);
+        let errorMsg = `NOAA API error: ${data.detail || data.title || 'Invalid request'}\n\n`;
+
+        // Add contextual help based on error type
+        if (status === 404) {
+          errorMsg += `This location may be outside NOAA's coverage area (US only).\n\n`;
+        }
+
+        errorMsg += `If this persists, check:\n` +
+          `- Planned outages: https://weather-gov.github.io/api/planned-outages\n` +
+          `- Service notices: https://www.weather.gov/notification\n` +
+          `- Report issues: https://weather-gov.github.io/api/reporting-issues`;
+
+        throw new Error(errorMsg);
       }
 
       // Server errors
       if (status >= 500) {
-        throw new Error(`NOAA API server error: ${data.detail || 'Service temporarily unavailable'}`);
+        throw new Error(
+          `NOAA API server error: ${data.detail || 'Service temporarily unavailable'}\n\n` +
+          `The NOAA Weather API may be experiencing an outage.\n\n` +
+          `Check service status:\n` +
+          `- Planned outages: https://weather-gov.github.io/api/planned-outages\n` +
+          `- Service notices: https://www.weather.gov/notification\n` +
+          `- Report issues: nco.ops@noaa.gov or (301) 683-1518`
+        );
       }
     }
 
     // Network errors
     if (error.code === 'ECONNABORTED') {
-      throw new Error('Request to NOAA API timed out. Please try again.');
+      throw new Error(
+        `Request to NOAA API timed out. Please try again.\n\n` +
+        `If timeouts persist, the service may be experiencing issues:\n` +
+        `https://weather-gov.github.io/api/planned-outages`
+      );
     }
 
     if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
-      throw new Error('Unable to connect to NOAA API. Please check your internet connection.');
+      throw new Error(
+        `Unable to connect to NOAA API.\n\n` +
+        `Possible causes:\n` +
+        `- Internet connection issues\n` +
+        `- NOAA API service outage\n` +
+        `- DNS resolution problems\n\n` +
+        `Check:\n` +
+        `- Your internet connection\n` +
+        `- Service status: https://weather-gov.github.io/api/planned-outages`
+      );
     }
 
     // Generic error
-    throw new Error(`NOAA API request failed: ${error.message}`);
+    throw new Error(
+      `NOAA API request failed: ${error.message}\n\n` +
+      `For assistance, visit:\n` +
+      `https://weather-gov.github.io/api/reporting-issues`
+    );
   }
 
   /**
@@ -111,6 +152,69 @@ export class NOAAService {
         }
       }
       throw error;
+    }
+  }
+
+  /**
+   * Check if the NOAA API is operational
+   * Performs a lightweight health check by requesting a well-known endpoint
+   * @returns Object with status information
+   */
+  async checkServiceStatus(): Promise<{
+    operational: boolean;
+    message: string;
+    statusPage: string;
+    timestamp: string;
+  }> {
+    try {
+      // Use a simple, well-known location (US mainland center) for health check
+      const response = await this.client.get('/points/39.8283,-98.5795', {
+        timeout: 10000 // Shorter timeout for health check
+      });
+
+      if (response.status === 200) {
+        return {
+          operational: true,
+          message: 'NOAA Weather API is operational',
+          statusPage: 'https://weather-gov.github.io/api/planned-outages',
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      return {
+        operational: false,
+        message: `NOAA API returned unexpected status: ${response.status}`,
+        statusPage: 'https://weather-gov.github.io/api/planned-outages',
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      let message = 'NOAA Weather API may be experiencing issues';
+      let operational = false;
+
+      if (axiosError.response) {
+        const status = axiosError.response.status;
+        if (status === 429) {
+          operational = true; // API is up, just rate limited
+          message = 'NOAA API is operational but rate limited';
+        } else if (status >= 500) {
+          message = 'NOAA API is experiencing server errors (possible outage)';
+        } else if (status === 404) {
+          operational = true; // 404 on this endpoint might just mean API change
+          message = 'NOAA API is responding (health check endpoint may have changed)';
+        }
+      } else if (axiosError.code === 'ECONNABORTED') {
+        message = 'NOAA API is not responding (timeout)';
+      } else if (axiosError.code === 'ENOTFOUND' || axiosError.code === 'ECONNREFUSED') {
+        message = 'Cannot connect to NOAA API (DNS or connection failure)';
+      }
+
+      return {
+        operational,
+        message,
+        statusPage: 'https://weather-gov.github.io/api/planned-outages',
+        timestamp: new Date().toISOString()
+      };
     }
   }
 

@@ -59,7 +59,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     tools: [
       {
         name: 'get_forecast',
-        description: 'Get future weather forecast for a location (US only). Use this for upcoming weather predictions (e.g., "tomorrow", "this week", "next 7 days"). Returns forecast data including temperature, precipitation, wind, and conditions. For current weather, use get_current_conditions. For past weather, use get_historical_weather.',
+        description: 'Get future weather forecast for a location (US only). Use this for upcoming weather predictions (e.g., "tomorrow", "this week", "next 7 days"). Returns forecast data including temperature, precipitation, wind, and conditions. For current weather, use get_current_conditions. For past weather, use get_historical_weather. If this tool returns an error, check the error message for status page links and consider using check_service_status to verify API availability.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -88,7 +88,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'get_current_conditions',
-        description: 'Get the most recent weather observation for a location (US only). Use this for current weather or when asking about "today\'s weather", "right now", or recent conditions without a specific historical date range. Returns the latest observation from the nearest weather station. For specific past dates or date ranges, use get_historical_weather instead.',
+        description: 'Get the most recent weather observation for a location (US only). Use this for current weather or when asking about "today\'s weather", "right now", or recent conditions without a specific historical date range. Returns the latest observation from the nearest weather station. For specific past dates or date ranges, use get_historical_weather instead. If this tool returns an error, check the error message for status page links and consider using check_service_status to verify API availability.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -110,7 +110,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'get_historical_weather',
-        description: 'Get historical weather data for a specific date range in the past. Use this when the user asks about weather on specific past dates (e.g., "yesterday", "last week", "November 4, 2024", "30 years ago"). Automatically uses NOAA API for recent dates (last 7 days, US only) or Open-Meteo API for older dates (worldwide, back to 1940). Do NOT use for current conditions - use get_current_conditions instead.',
+        description: 'Get historical weather data for a specific date range in the past. Use this when the user asks about weather on specific past dates (e.g., "yesterday", "last week", "November 4, 2024", "30 years ago"). Automatically uses NOAA API for recent dates (last 7 days, US only) or Open-Meteo API for older dates (worldwide, back to 1940). Do NOT use for current conditions - use get_current_conditions instead. If this tool returns an error, check the error message for status page links and consider using check_service_status to verify API availability.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -143,6 +143,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             }
           },
           required: ['latitude', 'longitude', 'start_date', 'end_date']
+        }
+      },
+      {
+        name: 'check_service_status',
+        description: 'Check the operational status of the NOAA and Open-Meteo weather APIs. Use this when experiencing errors or to proactively verify service availability before making weather data requests. Returns current status, helpful messages, and links to official status pages.',
+        inputSchema: {
+          type: 'object',
+          properties: {},
+          required: []
         }
       }
     ]
@@ -500,6 +509,74 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             ]
           };
         }
+      }
+
+      case 'check_service_status': {
+        // Check status of both services
+        const noaaStatus = await noaaService.checkServiceStatus();
+        const openMeteoStatus = await openMeteoService.checkServiceStatus();
+
+        // Format the status report
+        let output = `# Weather API Service Status\n\n`;
+        output += `**Check Time:** ${new Date().toLocaleString()}\n\n`;
+
+        // NOAA Status
+        output += `## NOAA Weather API (Forecasts & Current Conditions)\n\n`;
+        output += `**Status:** ${noaaStatus.operational ? '✅ Operational' : '❌ Issues Detected'}\n`;
+        output += `**Message:** ${noaaStatus.message}\n`;
+        output += `**Status Page:** ${noaaStatus.statusPage}\n`;
+        output += `**Coverage:** United States locations only\n\n`;
+
+        if (!noaaStatus.operational) {
+          output += `**Recommended Actions:**\n`;
+          output += `- Check planned outages: https://weather-gov.github.io/api/planned-outages\n`;
+          output += `- View service notices: https://www.weather.gov/notification\n`;
+          output += `- Report issues: nco.ops@noaa.gov or (301) 683-1518\n\n`;
+        }
+
+        // Open-Meteo Status
+        output += `## Open-Meteo API (Historical Weather Data)\n\n`;
+        output += `**Status:** ${openMeteoStatus.operational ? '✅ Operational' : '❌ Issues Detected'}\n`;
+        output += `**Message:** ${openMeteoStatus.message}\n`;
+        output += `**Status Page:** ${openMeteoStatus.statusPage}\n`;
+        output += `**Coverage:** Global (worldwide locations)\n\n`;
+
+        if (!openMeteoStatus.operational) {
+          output += `**Recommended Actions:**\n`;
+          output += `- Check production status: https://open-meteo.com/en/docs/model-updates\n`;
+          output += `- View GitHub issues: https://github.com/open-meteo/open-meteo/issues\n`;
+          output += `- Review documentation: https://open-meteo.com/en/docs\n\n`;
+        }
+
+        // Overall status summary
+        const bothOperational = noaaStatus.operational && openMeteoStatus.operational;
+        const neitherOperational = !noaaStatus.operational && !openMeteoStatus.operational;
+
+        if (bothOperational) {
+          output += `## Overall Status: ✅ All Services Operational\n\n`;
+          output += `Both NOAA and Open-Meteo APIs are functioning normally. Weather data requests should succeed.\n`;
+        } else if (neitherOperational) {
+          output += `## Overall Status: ❌ Multiple Service Issues\n\n`;
+          output += `Both weather APIs are experiencing issues. Please check the status pages above for updates.\n`;
+        } else {
+          output += `## Overall Status: ⚠️ Partial Service Availability\n\n`;
+          if (noaaStatus.operational) {
+            output += `NOAA API is operational: Forecasts and current conditions for US locations are available.\n`;
+            output += `Open-Meteo API has issues: Historical weather data may be unavailable.\n`;
+          } else {
+            output += `Open-Meteo API is operational: Historical weather data is available globally.\n`;
+            output += `NOAA API has issues: Forecasts and current conditions for US locations may be unavailable.\n`;
+          }
+        }
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: output
+            }
+          ]
+        };
       }
 
       default:
