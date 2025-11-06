@@ -8,6 +8,14 @@ import {
   metersToMiles,
   mpsToMph,
   extractValue,
+  formatTemperature,
+  formatWindSpeed,
+  formatVisibility,
+  formatPressure,
+  formatPercentage,
+  formatWindDirection,
+  formatDateTime,
+  formatDate,
 } from '../../src/utils/units.js';
 
 describe('Unit Conversions', () => {
@@ -143,6 +151,187 @@ describe('Unit Conversions', () => {
     });
   });
 
+  describe('Formatting Functions', () => {
+    describe('formatTemperature', () => {
+      it('should format Celsius to Fahrenheit', () => {
+        const qv = { value: 20, unitCode: 'wmoUnit:degC' };
+        expect(formatTemperature(qv)).toBe('68°F');
+      });
+
+      it('should keep Celsius when preferFahrenheit is false', () => {
+        const qv = { value: 20, unitCode: 'wmoUnit:degC' };
+        expect(formatTemperature(qv, false)).toBe('20°C');
+      });
+
+      it('should handle Fahrenheit values', () => {
+        const qv = { value: 68, unitCode: 'wmoUnit:degF' };
+        expect(formatTemperature(qv)).toBe('68°F');
+      });
+
+      it('should return N/A for null values', () => {
+        expect(formatTemperature(undefined)).toBe('N/A');
+        expect(formatTemperature({ value: null, unitCode: 'wmoUnit:degC' })).toBe('N/A');
+      });
+
+      it('should round to nearest degree', () => {
+        const qv = { value: 20.6, unitCode: 'wmoUnit:degC' };
+        expect(formatTemperature(qv)).toBe('69°F');
+      });
+    });
+
+    describe('formatWindSpeed', () => {
+      it('should format m/s to mph', () => {
+        const qv = { value: 10, unitCode: 'wmoUnit:m_s-1' };
+        expect(formatWindSpeed(qv)).toContain('mph');
+        expect(formatWindSpeed(qv)).toContain('22');
+      });
+
+      it('should format km/h to mph', () => {
+        const qv = { value: 100, unitCode: 'wmoUnit:km_h-1' };
+        expect(formatWindSpeed(qv)).toContain('mph');
+        expect(formatWindSpeed(qv)).toContain('62');
+      });
+
+      it('should handle mph values directly', () => {
+        const qv = { value: 50, unitCode: 'wmoUnit:mph' };
+        expect(formatWindSpeed(qv)).toBe('50 mph');
+      });
+
+      it('should return Calm for null values', () => {
+        expect(formatWindSpeed(undefined)).toBe('Calm');
+        expect(formatWindSpeed({ value: null, unitCode: 'wmoUnit:m_s-1' })).toBe('Calm');
+      });
+    });
+
+    describe('formatVisibility', () => {
+      it('should format meters to miles', () => {
+        const qv = { value: 16093.4, unitCode: 'wmoUnit:m' };
+        expect(formatVisibility(qv)).toContain('10.0 miles');
+      });
+
+      it('should return N/A for null values', () => {
+        expect(formatVisibility(undefined)).toBe('N/A');
+      });
+
+      it('should format to one decimal place', () => {
+        const qv = { value: 8046.7, unitCode: 'wmoUnit:m' };
+        const result = formatVisibility(qv);
+        expect(result).toMatch(/\d+\.\d miles/);
+      });
+    });
+
+    describe('formatPressure', () => {
+      it('should format Pascals to inHg', () => {
+        const qv = { value: 101325, unitCode: 'wmoUnit:Pa' };
+        const result = formatPressure(qv);
+        expect(result).toContain('inHg');
+        expect(result).toMatch(/29\.\d{2}/);
+      });
+
+      it('should return N/A for null values', () => {
+        expect(formatPressure(undefined)).toBe('N/A');
+      });
+
+      it('should format to two decimal places', () => {
+        const qv = { value: 100000, unitCode: 'wmoUnit:Pa' };
+        const result = formatPressure(qv);
+        expect(result).toMatch(/\d+\.\d{2} inHg/);
+      });
+    });
+
+    describe('formatPercentage', () => {
+      it('should format percentage values', () => {
+        const qv = { value: 75.5, unitCode: 'wmoUnit:percent' };
+        expect(formatPercentage(qv)).toBe('76%');
+      });
+
+      it('should return N/A for null values', () => {
+        expect(formatPercentage(undefined)).toBe('N/A');
+      });
+
+      it('should round to nearest whole number', () => {
+        expect(formatPercentage({ value: 33.3, unitCode: 'wmoUnit:percent' })).toBe('33%');
+        expect(formatPercentage({ value: 66.7, unitCode: 'wmoUnit:percent' })).toBe('67%');
+      });
+    });
+
+    describe('formatWindDirection', () => {
+      it('should convert 0 degrees to N', () => {
+        const qv = { value: 0, unitCode: 'wmoUnit:degree_(angle)' };
+        expect(formatWindDirection(qv)).toBe('N');
+      });
+
+      it('should convert 90 degrees to E', () => {
+        const qv = { value: 90, unitCode: 'wmoUnit:degree_(angle)' };
+        expect(formatWindDirection(qv)).toBe('E');
+      });
+
+      it('should convert 180 degrees to S', () => {
+        const qv = { value: 180, unitCode: 'wmoUnit:degree_(angle)' };
+        expect(formatWindDirection(qv)).toBe('S');
+      });
+
+      it('should convert 270 degrees to W', () => {
+        const qv = { value: 270, unitCode: 'wmoUnit:degree_(angle)' };
+        expect(formatWindDirection(qv)).toBe('W');
+      });
+
+      it('should handle intermediate directions', () => {
+        expect(formatWindDirection({ value: 45, unitCode: 'wmoUnit:degree_(angle)' })).toBe('NE');
+        expect(formatWindDirection({ value: 135, unitCode: 'wmoUnit:degree_(angle)' })).toBe('SE');
+        expect(formatWindDirection({ value: 225, unitCode: 'wmoUnit:degree_(angle)' })).toBe('SW');
+        expect(formatWindDirection({ value: 315, unitCode: 'wmoUnit:degree_(angle)' })).toBe('NW');
+      });
+
+      it('should return Variable for null values', () => {
+        expect(formatWindDirection(undefined)).toBe('Variable');
+        expect(formatWindDirection({ value: null, unitCode: 'wmoUnit:degree_(angle)' })).toBe('Variable');
+      });
+
+      it('should handle 360 degrees (wraps to N)', () => {
+        const qv = { value: 360, unitCode: 'wmoUnit:degree_(angle)' };
+        expect(formatWindDirection(qv)).toBe('N');
+      });
+    });
+
+    describe('formatDateTime', () => {
+      it('should format ISO string to readable date/time', () => {
+        const result = formatDateTime('2024-01-15T12:00:00Z');
+        expect(result).toContain('Jan');
+        expect(result).toContain('15');
+      });
+
+      it('should include time components', () => {
+        const result = formatDateTime('2024-06-20T14:30:00Z');
+        expect(result).toMatch(/\d{1,2}:\d{2}/); // Contains time
+      });
+
+      it('should handle different ISO formats', () => {
+        expect(() => formatDateTime('2024-01-15T12:00:00.000Z')).not.toThrow();
+        expect(() => formatDateTime('2024-01-15T12:00:00+00:00')).not.toThrow();
+      });
+    });
+
+    describe('formatDate', () => {
+      it('should format ISO string to readable date only', () => {
+        const result = formatDate('2024-01-15T12:00:00Z');
+        expect(result).toContain('January');
+        expect(result).toContain('15');
+        expect(result).toContain('2024');
+      });
+
+      it('should include day of week', () => {
+        const result = formatDate('2024-01-15T00:00:00Z');
+        expect(result).toMatch(/Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday/);
+      });
+
+      it('should not include time components', () => {
+        const result = formatDate('2024-06-20T14:30:00Z');
+        expect(result).not.toMatch(/\d{1,2}:\d{2}/);
+      });
+    });
+  });
+
   describe('Edge Cases', () => {
     it('should handle very small decimal values', () => {
       expect(celsiusToFahrenheit(0.01)).toBeCloseTo(32.018, 2);
@@ -157,6 +346,16 @@ describe('Unit Conversions', () => {
       expect(metersToFeet(-10)).toBeCloseTo(-32.8084, 3);
     });
 
+    it('should handle zero in formatters', () => {
+      expect(formatTemperature({ value: 0, unitCode: 'wmoUnit:degC' })).toBe('32°F');
+      expect(formatWindSpeed({ value: 0, unitCode: 'wmoUnit:m_s-1' })).toBe('0 mph');
+      expect(formatPercentage({ value: 0, unitCode: 'wmoUnit:percent' })).toBe('0%');
+    });
+
+    it('should handle undefined unitCode in formatters', () => {
+      expect(formatTemperature({ value: 68, unitCode: undefined })).toBe('68°F');
+      expect(formatWindSpeed({ value: 10, unitCode: undefined })).toBe('10 mph');
+    });
   });
 
   describe('Boundary Values', () => {

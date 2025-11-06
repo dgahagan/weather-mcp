@@ -6,7 +6,8 @@ describe('Cache', () => {
 
   beforeEach(() => {
     // Create cache with max size of 3 for testing
-    cache = new Cache<string>(3, Infinity); // Disable auto-cleanup for deterministic tests
+    // Use a very large number instead of Infinity to avoid Node.js timeout warnings
+    cache = new Cache<string>(3, Number.MAX_SAFE_INTEGER);
   });
 
   afterEach(() => {
