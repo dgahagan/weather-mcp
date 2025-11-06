@@ -201,16 +201,17 @@ describe('Validation Utilities', () => {
       expect(validateForecastDays({ days: 1 })).toBe(1);
       expect(validateForecastDays({ days: 7 })).toBe(7);
       expect(validateForecastDays({ days: 3 })).toBe(3);
+      expect(validateForecastDays({ days: 16 })).toBe(16);
     });
 
     it('should reject days < 1', () => {
-      expect(() => validateForecastDays({ days: 0 })).toThrow('Must be between 1 and 7');
-      expect(() => validateForecastDays({ days: -1 })).toThrow('Must be between 1 and 7');
+      expect(() => validateForecastDays({ days: 0 })).toThrow('Must be between 1 and 16');
+      expect(() => validateForecastDays({ days: -1 })).toThrow('Must be between 1 and 16');
     });
 
-    it('should reject days > 7', () => {
-      expect(() => validateForecastDays({ days: 8 })).toThrow('Must be between 1 and 7');
-      expect(() => validateForecastDays({ days: 14 })).toThrow('Must be between 1 and 7');
+    it('should reject days > 16', () => {
+      expect(() => validateForecastDays({ days: 17 })).toThrow('Must be between 1 and 16');
+      expect(() => validateForecastDays({ days: 30 })).toThrow('Must be between 1 and 16');
     });
   });
 

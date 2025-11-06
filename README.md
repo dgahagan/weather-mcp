@@ -4,28 +4,36 @@
 [![MCP Registry](https://img.shields.io/badge/MCP-Registry-blue)](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.dgahagan/weather-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-An MCP (Model Context Protocol) server that provides weather data to AI systems like Claude Code. Uses NOAA's API for US weather forecasts and current conditions, plus Open-Meteo for global historical weather data.
+An MCP (Model Context Protocol) server that provides **global weather data** to AI systems like Claude Code. Uses NOAA's API for detailed US weather, plus Open-Meteo for international forecasts and historical weather data worldwide.
 
 **📦 Available in the [Official MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.dgahagan/weather-mcp)** as `io.github.dgahagan/weather-mcp`
 
-**No API keys required!** Both NOAA and Open-Meteo APIs are free to use with no authentication needed.
+**No API keys required!** All APIs (NOAA, Open-Meteo) are free to use with no authentication needed.
 
 ## Features
 
-- **Weather Alerts**: Get active weather watches, warnings, and advisories for US locations (NEW in v0.3.0)
+- **Location Search**: Find coordinates for any location worldwide (NEW in v0.4.0)
+  - Convert location names to coordinates ("Paris" → 48.8534°, 2.3488°)
+  - Support for cities, airports, landmarks, and regions globally
+  - Detailed metadata: timezone, elevation, population, country
+  - Enables natural language queries: "What's the weather in Tokyo?"
+- **Global Weather Forecasts**: Get forecasts for any location worldwide (ENHANCED in v0.4.0)
+  - Automatic source selection: NOAA (US, more detailed) or Open-Meteo (international)
+  - Extended forecasts up to 16 days (was 7)
+  - Sunrise/sunset times with daylight duration
+  - Daily or hourly granularity
+  - Precipitation probability display
+  - Temperature trends, humidity, wind, and UV index
+- **Weather Alerts**: Get active weather watches, warnings, and advisories for US locations
   - Severity levels (Extreme, Severe, Moderate, Minor)
   - Urgency and certainty indicators
   - Effective and expiration times
   - Instructions and recommended responses
-- **Get Forecast**: Retrieve weather forecasts for any US location (7-day forecast)
-  - Daily or hourly granularity (NEW in v0.3.0)
-  - Precipitation probability display (NEW in v0.3.0)
-  - Temperature trends and humidity
 - **Current Conditions**: Get enhanced real-time weather observations for US locations
-  - Heat index and wind chill when relevant (NEW in v0.3.0)
-  - 24-hour temperature range (NEW in v0.3.0)
-  - Wind gusts and detailed cloud cover (NEW in v0.3.0)
-  - Recent precipitation history (NEW in v0.3.0)
+  - Heat index and wind chill when relevant
+  - 24-hour temperature range
+  - Wind gusts and detailed cloud cover
+  - Recent precipitation history
 - **Historical Data**: Access historical weather observations for any location worldwide
   - Recent data (last 7 days): Detailed hourly observations from NOAA real-time API (US only)
   - Archival data (>7 days old): Hourly/daily weather data from 1940-present via Open-Meteo (global coverage)
@@ -48,7 +56,8 @@ The Weather MCP server includes an intelligent in-memory caching system that sig
 
 The cache automatically stores and retrieves weather data with intelligent expiration:
 
-- **Weather Alerts**: Cached for 5 minutes (alerts can change rapidly) - NEW in v0.3.0
+- **Location Searches**: Cached for 30 days (locations don't move) - NEW in v0.4.0
+- **Weather Alerts**: Cached for 5 minutes (alerts can change rapidly)
 - **Forecasts**: Cached for 2 hours (updated approximately hourly)
 - **Current Conditions**: Cached for 15 minutes (observations update every 20-60 minutes)
 - **Historical Data (>1 day old)**: Cached indefinitely (finalized data never changes)
@@ -163,27 +172,89 @@ Restart Claude Code and the weather tools will be available.
 
 ## Finding Coordinates
 
-All tools require latitude and longitude coordinates. You can find coordinates for any location by:
-- Asking Claude Code: "What are the coordinates for [city name]?"
+**NEW in v0.4.0**: Use the built-in `search_location` tool to find coordinates automatically!
+
+```
+"What's the weather in Paris?"
+→ Uses search_location to find Paris coordinates (48.8534°, 2.3488°)
+→ Then gets the forecast for those coordinates
+```
+
+You can also find coordinates manually:
 - Using Google Maps: Right-click a location and select the coordinates
 - Using a geocoding service like geocode.maps.co or nominatim.org
 
-### Common US City Coordinates
+### Common City Coordinates (For Reference)
 
 | City | Latitude | Longitude |
 |------|----------|-----------|
-| San Francisco, CA | 37.7749 | -122.4194 |
+| Paris, France | 48.8534 | 2.3488 |
+| Tokyo, Japan | 35.6895 | 139.6917 |
+| London, UK | 51.5085 | -0.1257 |
 | New York, NY | 40.7128 | -74.0060 |
-| Chicago, IL | 41.8781 | -87.6298 |
-| Los Angeles, CA | 34.0522 | -118.2437 |
-| Denver, CO | 39.7392 | -104.9903 |
-| Miami, FL | 25.7617 | -80.1918 |
-| Seattle, WA | 47.6062 | -122.3321 |
-| Austin, TX | 30.2672 | -97.7431 |
+| San Francisco, CA | 37.7749 | -122.4194 |
+| Sydney, Australia | -33.8688 | 151.2093 |
+| Berlin, Germany | 52.5200 | 13.4050 |
+| Dubai, UAE | 25.2048 | 55.2708 |
 
 ## Available Tools
 
-### 1. check_service_status
+### 1. search_location (NEW in v0.4.0)
+Find coordinates for any location worldwide by name.
+
+**Parameters:**
+- `query` (required): Location name to search for (e.g., "Paris", "New York, NY", "Tokyo")
+- `limit` (optional): Maximum number of results to return (1-100, default: 5)
+
+**Description:**
+Converts location names to coordinates using the Open-Meteo Geocoding API. Returns multiple matches with detailed metadata including coordinates, timezone, elevation, population, and administrative regions. Enables natural language weather queries by finding coordinates automatically.
+
+**Examples:**
+```
+"Find coordinates for Paris"
+"Search for Tokyo, Japan"
+"Where is San Francisco, CA?"
+```
+
+**Returns:**
+- Location name and full administrative hierarchy
+- Latitude and longitude coordinates
+- Timezone and elevation
+- Population (when available)
+- Country and region information
+- Feature type (capital, city, airport, etc.)
+
+### 2. get_forecast (ENHANCED in v0.4.0)
+Get weather forecast for any location worldwide.
+
+**Parameters:**
+- `latitude` (required): Latitude coordinate (-90 to 90)
+- `longitude` (required): Longitude coordinate (-180 to 180)
+- `days` (optional): Number of days in forecast (1-16, default: 7)
+- `granularity` (optional): "daily" or "hourly" (default: "daily")
+- `include_precipitation_probability` (optional): Include rain chances (default: true)
+- `source` (optional): "auto" (default), "noaa" (US only), or "openmeteo" (global)
+
+**Description:**
+Automatically selects the best data source: NOAA for US locations (more detailed) or Open-Meteo for international locations. Supports extended forecasts up to 16 days. Includes sunrise/sunset times, daylight duration, temperature, precipitation, wind, and UV index.
+
+**Examples:**
+```
+"Get a 7-day forecast for Paris (48.8534, 2.3488)"
+"Hourly forecast for Tokyo for the next 3 days"
+"16-day extended forecast for Sydney, Australia"
+```
+
+**Returns:**
+- Temperature (high/low, feels like)
+- Sunrise and sunset times with daylight duration (NEW in v0.4.0)
+- Precipitation chances and amounts
+- Wind speed, direction, and gusts
+- Weather conditions and descriptions
+- UV index (for international locations)
+- Humidity and atmospheric conditions
+
+### 3. check_service_status
 Check the operational status of weather APIs and cache performance.
 
 **Parameters:** None
@@ -198,25 +269,12 @@ Check if the weather services are operational
 
 **Returns:**
 - Operational status for NOAA API (forecasts & current conditions)
-- Operational status for Open-Meteo API (historical data)
+- Operational status for Open-Meteo API (historical data & forecasts)
 - Cache statistics (hit rate, size, API call reduction)
 - Status page links and recommended actions if issues are detected
 - Overall service availability summary
 
-### 2. get_forecast
-Get weather forecast for a location.
-
-**Parameters:**
-- `latitude` (required): Latitude coordinate (-90 to 90)
-- `longitude` (required): Longitude coordinate (-180 to 180)
-- `days` (optional): Number of days in forecast (1-7, default: 7)
-
-**Example:**
-```
-Get the weather forecast for San Francisco (latitude: 37.7749, longitude: -122.4194)
-```
-
-### 3. get_current_conditions
+### 4. get_current_conditions
 Get current weather conditions for a location.
 
 **Parameters:**
@@ -228,7 +286,7 @@ Get current weather conditions for a location.
 What are the current weather conditions in New York? (latitude: 40.7128, longitude: -74.0060)
 ```
 
-### 4. get_historical_weather
+### 5. get_historical_weather
 Get historical weather observations for a location.
 
 **Parameters:**
@@ -462,17 +520,34 @@ weather-mcp/
 
 ## API Information
 
-This server uses two weather APIs:
+This server uses three weather APIs:
 
-### NOAA Weather API (Real-time)
+### NOAA Weather API (Real-time, US)
 - **Base URL**: https://api.weather.gov
 - **Authentication**: None required (User-Agent header only)
 - **Rate Limits**: Enforced with 5-second retry window
 - **Coverage**: United States locations only
-- **Use cases**: Forecasts, current conditions, recent observations (last 7 days)
+- **Use cases**: US forecasts (detailed), current conditions, recent observations (last 7 days)
 - **Data**: Detailed hourly observations from weather stations
 
-### Open-Meteo Historical Weather API (Archival)
+### Open-Meteo Forecast API (Global) - NEW in v0.4.0
+- **Base URL**: https://api.open-meteo.com/v1
+- **Authentication**: None required (no API token needed)
+- **Rate Limits**: 10,000 requests/day for non-commercial use
+- **Coverage**: Global (worldwide locations)
+- **Use cases**: International forecasts, extended forecasts (up to 16 days)
+- **Data**: Temperature, precipitation, wind, humidity, UV index, sunrise/sunset
+- **Resolution**: 11km global grid resolution
+
+### Open-Meteo Geocoding API (Global) - NEW in v0.4.0
+- **Base URL**: https://geocoding-api.open-meteo.com/v1
+- **Authentication**: None required (no API token needed)
+- **Coverage**: Global (worldwide locations)
+- **Use cases**: Location name to coordinates conversion
+- **Data**: Coordinates, timezone, elevation, population, administrative regions
+- **Cache**: 30-day TTL (locations don't move)
+
+### Open-Meteo Historical Weather API (Global, Archival)
 - **Base URL**: https://archive-api.open-meteo.com/v1
 - **Authentication**: None required (no API token needed)
 - **Rate Limits**: 10,000 requests/day for non-commercial use
@@ -488,9 +563,15 @@ For more details on NOAA APIs, see [NOAA_API_RESEARCH.md](./docs/NOAA_API_RESEAR
 
 ### Geographic Coverage
 
-**Forecasts and Current Conditions:**
-- NOAA APIs only cover **United States locations**
-- International locations are not supported for forecasts and current conditions
+**Forecasts:** (UPDATED in v0.4.0)
+- **Global coverage** via automatic source selection
+- US locations: Uses NOAA API (more detailed, includes narratives)
+- International locations: Uses Open-Meteo API (reliable global forecasts)
+- Extended forecasts (>7 days, up to 16 days): Open-Meteo only
+
+**Current Conditions:**
+- **US locations only** (NOAA API)
+- International real-time conditions not yet supported
 
 **Historical Data:**
 - Recent data (last 7 days): **US locations only** (NOAA API)

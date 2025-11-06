@@ -1,12 +1,17 @@
 /**
- * Service for interacting with the Open-Meteo Historical Weather API
- * Documentation: https://open-meteo.com/en/docs/historical-weather-api
+ * Service for interacting with the Open-Meteo APIs
+ * Documentation:
+ * - Historical Weather: https://open-meteo.com/en/docs/historical-weather-api
+ * - Forecast: https://open-meteo.com/en/docs
+ * - Geocoding: https://open-meteo.com/en/docs/geocoding-api
  */
 
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import type {
   OpenMeteoHistoricalResponse,
-  OpenMeteoErrorResponse
+  OpenMeteoErrorResponse,
+  GeocodingResponse,
+  OpenMeteoForecastResponse
 } from '../types/openmeteo.js';
 import { Cache } from '../utils/cache.js';
 import { CacheConfig, getHistoricalDataTTL } from '../config/cache.js';
@@ -21,18 +26,24 @@ import {
 
 export interface OpenMeteoServiceConfig {
   baseURL?: string;
+  geocodingURL?: string;
+  forecastURL?: string;
   timeout?: number;
   maxRetries?: number;
 }
 
 export class OpenMeteoService {
   private client: AxiosInstance;
+  private geocodingClient: AxiosInstance;
+  private forecastClient: AxiosInstance;
   private maxRetries: number;
   private cache: Cache;
 
   constructor(config: OpenMeteoServiceConfig = {}) {
     const {
       baseURL = 'https://archive-api.open-meteo.com/v1',
+      geocodingURL = 'https://geocoding-api.open-meteo.com/v1',
+      forecastURL = 'https://api.open-meteo.com/v1',
       timeout = 30000,
       maxRetries = 3
     } = config;
@@ -40,17 +51,48 @@ export class OpenMeteoService {
     this.maxRetries = maxRetries;
     this.cache = new Cache(CacheConfig.maxSize);
 
+    // Historical weather client
     this.client = axios.create({
       baseURL,
       timeout,
       headers: {
         'Accept': 'application/json',
-        'User-Agent': 'weather-mcp/0.1.0'
+        'User-Agent': 'weather-mcp/0.4.0'
+      }
+    });
+
+    // Geocoding client
+    this.geocodingClient = axios.create({
+      baseURL: geocodingURL,
+      timeout,
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'weather-mcp/0.4.0'
+      }
+    });
+
+    // Forecast client
+    this.forecastClient = axios.create({
+      baseURL: forecastURL,
+      timeout,
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'weather-mcp/0.4.0'
       }
     });
 
     // Add response interceptor for error handling
     this.client.interceptors.response.use(
+      response => response,
+      error => this.handleError(error)
+    );
+
+    this.geocodingClient.interceptors.response.use(
+      response => response,
+      error => this.handleError(error)
+    );
+
+    this.forecastClient.interceptors.response.use(
       response => response,
       error => this.handleError(error)
     );
@@ -418,5 +460,254 @@ export class OpenMeteoService {
     };
 
     return weatherCodes[code] || `Unknown (code: ${code})`;
+  }
+
+  /**
+   * Search for locations by name using the Open-Meteo Geocoding API
+   *
+   * @param query - Location name to search for (e.g., "Paris", "New York, NY", "Tokyo")
+   * @param limit - Maximum number of results to return (default: 5, max: 100)
+   * @param language - Language for results (default: 'en')
+   * @returns Geocoding results with coordinates and metadata
+   */
+  async searchLocation(
+    query: string,
+    limit: number = 5,
+    language: string = 'en'
+  ): Promise<GeocodingResponse> {
+    if (!query || query.trim().length === 0) {
+      throw new InvalidLocationError(
+        'OpenMeteo',
+        'Search query cannot be empty'
+      );
+    }
+
+    if (query.trim().length === 1) {
+      throw new InvalidLocationError(
+        'OpenMeteo',
+        'Search query must be at least 2 characters long'
+      );
+    }
+
+    // Validate limit
+    if (limit < 1 || limit > 100) {
+      throw new InvalidLocationError(
+        'OpenMeteo',
+        'Limit must be between 1 and 100'
+      );
+    }
+
+    // Check cache first (locations don't move, so cache indefinitely)
+    if (CacheConfig.enabled) {
+      const cacheKey = Cache.generateKey('openmeteo-geocoding', query, limit, language);
+      const cached = this.cache.get(cacheKey);
+      if (cached) {
+        return cached as GeocodingResponse;
+      }
+
+      const params = {
+        name: query.trim(),
+        count: limit,
+        language,
+        format: 'json'
+      };
+
+      const response = await this.geocodingClient.get<GeocodingResponse>('/search', { params });
+
+      // Cache indefinitely (locations don't change)
+      // Using 30 days as TTL to keep cache from growing unbounded
+      this.cache.set(cacheKey, response.data, 30 * 24 * 60 * 60 * 1000);
+
+      return response.data;
+    }
+
+    // No caching
+    const params = {
+      name: query.trim(),
+      count: limit,
+      language,
+      format: 'json'
+    };
+
+    const response = await this.geocodingClient.get<GeocodingResponse>('/search', { params });
+    return response.data;
+  }
+
+  /**
+   * Get weather forecast from Open-Meteo Forecast API
+   *
+   * @param latitude - Latitude coordinate (-90 to 90)
+   * @param longitude - Longitude coordinate (-180 to 180)
+   * @param days - Number of forecast days (1-16, default: 7)
+   * @param hourly - Whether to include hourly data (default: false)
+   * @returns Weather forecast data
+   */
+  async getForecast(
+    latitude: number,
+    longitude: number,
+    days: number = 7,
+    hourly: boolean = false
+  ): Promise<OpenMeteoForecastResponse> {
+    // Validate coordinates
+    validateLatitude(latitude);
+    validateLongitude(longitude);
+
+    // Validate days
+    if (days < 1 || days > 16) {
+      throw new InvalidLocationError(
+        'OpenMeteo',
+        'Forecast days must be between 1 and 16'
+      );
+    }
+
+    // Build parameters
+    const params = this.buildForecastParams(latitude, longitude, days, hourly);
+
+    // Check cache first
+    if (CacheConfig.enabled) {
+      const cacheKey = Cache.generateKey('openmeteo-forecast', latitude, longitude, days, hourly);
+      const cached = this.cache.get(cacheKey);
+      if (cached) {
+        return cached as OpenMeteoForecastResponse;
+      }
+
+      const response = await this.makeRequestToForecast<OpenMeteoForecastResponse>('/forecast', params);
+      this.validateForecastResponse(response, hourly);
+
+      // Cache for 2 hours (forecasts update regularly)
+      this.cache.set(cacheKey, response, 2 * 60 * 60 * 1000);
+
+      return response;
+    }
+
+    // No caching
+    const response = await this.makeRequestToForecast<OpenMeteoForecastResponse>('/forecast', params);
+    this.validateForecastResponse(response, hourly);
+    return response;
+  }
+
+  /**
+   * Build request parameters for forecast data
+   * @private
+   */
+  private buildForecastParams(
+    latitude: number,
+    longitude: number,
+    days: number,
+    hourly: boolean
+  ): Record<string, string | number> {
+    const params: Record<string, string | number> = {
+      latitude,
+      longitude,
+      forecast_days: days,
+      temperature_unit: 'fahrenheit',
+      wind_speed_unit: 'mph',
+      precipitation_unit: 'inch',
+      timezone: 'auto'
+    };
+
+    // Always include daily data with sunrise/sunset
+    params.daily = [
+      'weather_code',
+      'temperature_2m_max',
+      'temperature_2m_min',
+      'apparent_temperature_max',
+      'apparent_temperature_min',
+      'sunrise',
+      'sunset',
+      'daylight_duration',
+      'sunshine_duration',
+      'uv_index_max',
+      'precipitation_sum',
+      'rain_sum',
+      'showers_sum',
+      'snowfall_sum',
+      'precipitation_hours',
+      'precipitation_probability_max',
+      'wind_speed_10m_max',
+      'wind_gusts_10m_max',
+      'wind_direction_10m_dominant'
+    ].join(',');
+
+    // Optionally include hourly data
+    if (hourly) {
+      params.hourly = [
+        'temperature_2m',
+        'relative_humidity_2m',
+        'dewpoint_2m',
+        'apparent_temperature',
+        'precipitation_probability',
+        'precipitation',
+        'rain',
+        'showers',
+        'snowfall',
+        'snow_depth',
+        'weather_code',
+        'pressure_msl',
+        'cloud_cover',
+        'visibility',
+        'wind_speed_10m',
+        'wind_direction_10m',
+        'wind_gusts_10m',
+        'uv_index',
+        'is_day'
+      ].join(',');
+    }
+
+    return params;
+  }
+
+  /**
+   * Make request to forecast API with retry logic
+   * @private
+   */
+  private async makeRequestToForecast<T>(
+    url: string,
+    params: Record<string, string | number>,
+    retries = 0
+  ): Promise<T> {
+    try {
+      const response = await this.forecastClient.get<T>(url, { params });
+      return response.data;
+    } catch (error) {
+      // Retry on rate limit or server errors
+      if (retries < this.maxRetries) {
+        const shouldRetry =
+          (error as Error).message.includes('rate limit') ||
+          (error as Error).message.includes('server error') ||
+          (error as Error).message.includes('timed out');
+
+        if (shouldRetry) {
+          const baseDelay = Math.pow(2, retries) * 1000;
+          const delay = baseDelay * (0.5 + Math.random() * 0.5);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return this.makeRequestToForecast<T>(url, params, retries + 1);
+        }
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Validate that the forecast response contains the expected data
+   * @private
+   */
+  private validateForecastResponse(
+    response: OpenMeteoForecastResponse,
+    hourly: boolean
+  ): void {
+    if (hourly && (!response.hourly || !response.hourly.time || response.hourly.time.length === 0)) {
+      throw new DataNotFoundError(
+        'OpenMeteo',
+        'No hourly forecast data available for the specified location'
+      );
+    }
+
+    if (!response.daily || !response.daily.time || response.daily.time.length === 0) {
+      throw new DataNotFoundError(
+        'OpenMeteo',
+        'No daily forecast data available for the specified location'
+      );
+    }
   }
 }

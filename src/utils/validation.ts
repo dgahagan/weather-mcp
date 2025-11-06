@@ -131,7 +131,7 @@ export function validateForecastDays(args: unknown): number {
     return FormatConstants.defaultForecastDays;
   }
 
-  return validatePositiveInteger(days, 'days', 1, FormatConstants.defaultForecastDays);
+  return validatePositiveInteger(days, 'days', 1, FormatConstants.maxForecastDays);
 }
 
 /**

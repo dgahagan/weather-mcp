@@ -76,6 +76,11 @@ export const FormatConstants = {
   defaultForecastDays: 7,
 
   /**
+   * Maximum forecast days (Open-Meteo supports up to 16 days)
+   */
+  maxForecastDays: 16,
+
+  /**
    * Default observation limit for historical data
    */
   defaultHistoricalLimit: 168, // One week of hourly data

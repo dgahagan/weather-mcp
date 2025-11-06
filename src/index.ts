@@ -31,6 +31,7 @@ import { handleGetCurrentConditions } from './handlers/currentConditionsHandler.
 import { handleGetAlerts } from './handlers/alertsHandler.js';
 import { handleGetHistoricalWeather } from './handlers/historicalWeatherHandler.js';
 import { handleCheckServiceStatus } from './handlers/statusHandler.js';
+import { handleSearchLocation } from './handlers/locationHandler.js';
 
 /**
  * Server information
@@ -85,7 +86,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     tools: [
       {
         name: 'get_forecast',
-        description: 'Get future weather forecast for a location (US only). Use this for upcoming weather predictions (e.g., "tomorrow", "this week", "next 7 days", "hourly forecast"). Returns forecast data including temperature, precipitation, wind, and conditions. Supports both daily and hourly granularity. For current weather, use get_current_conditions. For past weather, use get_historical_weather. If this tool returns an error, check the error message for status page links and consider using check_service_status to verify API availability.',
+        description: 'Get future weather forecast for a location (global coverage). Use this for upcoming weather predictions (e.g., "tomorrow", "this week", "next 7 days", "hourly forecast"). Returns forecast data including temperature, precipitation, wind, conditions, and sunrise/sunset times. Supports both daily and hourly granularity. Automatically selects best data source: NOAA for US locations (more detailed), Open-Meteo for international locations. For current weather, use get_current_conditions. For past weather, use get_historical_weather. If this tool returns an error, check the error message for status page links and consider using check_service_status to verify API availability.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -103,9 +104,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             days: {
               type: 'number',
-              description: 'Number of days to include in forecast (1-7, default: 7)',
+              description: 'Number of days to include in forecast (1-16 for global, 1-7 for US NOAA, default: 7)',
               minimum: 1,
-              maximum: 7,
+              maximum: 16,
               default: 7
             },
             granularity: {
@@ -118,6 +119,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: 'boolean',
               description: 'Include precipitation probability in the forecast output (default: true)',
               default: true
+            },
+            source: {
+              type: 'string',
+              description: 'Data source: "auto" (default, selects NOAA for US or Open-Meteo for international), "noaa" (US only), or "openmeteo" (global)',
+              enum: ['auto', 'noaa', 'openmeteo'],
+              default: 'auto'
             }
           },
           required: ['latitude', 'longitude']
@@ -217,6 +224,27 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           properties: {},
           required: []
         }
+      },
+      {
+        name: 'search_location',
+        description: 'Search for locations by name to get coordinates for weather queries. Use this when the user provides a location name instead of coordinates (e.g., "Paris", "New York", "Tokyo", "San Francisco, CA"). Returns location matches with coordinates, timezone, elevation, and other metadata. Enables natural language location queries like "What\'s the weather in Paris?" by converting location names to coordinates.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            query: {
+              type: 'string',
+              description: 'Location name to search for (e.g., "Paris", "New York, NY", "Tokyo")'
+            },
+            limit: {
+              type: 'number',
+              description: 'Maximum number of results to return (1-100, default: 5)',
+              minimum: 1,
+              maximum: 100,
+              default: 5
+            }
+          },
+          required: ['query']
+        }
       }
     ]
   };
@@ -231,7 +259,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     switch (name) {
       case 'get_forecast':
-        return await handleGetForecast(args, noaaService);
+        return await handleGetForecast(args, noaaService, openMeteoService);
 
       case 'get_current_conditions':
         return await handleGetCurrentConditions(args, noaaService);
@@ -244,6 +272,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'check_service_status':
         return await handleCheckServiceStatus(noaaService, openMeteoService);
+
+      case 'search_location':
+        return await handleSearchLocation(args, openMeteoService);
 
       default:
         throw new Error(`Unknown tool: ${name}`);
