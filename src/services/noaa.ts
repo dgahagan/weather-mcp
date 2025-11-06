@@ -11,6 +11,8 @@ import type {
   StationCollectionResponse,
   NOAAErrorResponse
 } from '../types/noaa.js';
+import { Cache } from '../utils/cache.js';
+import { CacheConfig, getHistoricalDataTTL } from '../config/cache.js';
 
 export interface NOAAServiceConfig {
   userAgent?: string;
@@ -22,6 +24,7 @@ export interface NOAAServiceConfig {
 export class NOAAService {
   private client: AxiosInstance;
   private maxRetries: number;
+  private cache: Cache;
 
   constructor(config: NOAAServiceConfig = {}) {
     const {
@@ -32,6 +35,7 @@ export class NOAAService {
     } = config;
 
     this.maxRetries = maxRetries;
+    this.cache = new Cache(CacheConfig.maxSize);
 
     this.client = axios.create({
       baseURL,
@@ -156,6 +160,20 @@ export class NOAAService {
   }
 
   /**
+   * Get cache statistics
+   */
+  getCacheStats() {
+    return this.cache.getStats();
+  }
+
+  /**
+   * Clear the cache
+   */
+  clearCache(): void {
+    this.cache.clear();
+  }
+
+  /**
    * Check if the NOAA API is operational
    * Performs a lightweight health check by requesting a well-known endpoint
    * @returns Object with status information
@@ -231,6 +249,22 @@ export class NOAAService {
       throw new Error(`Invalid longitude: ${longitude}. Must be between -180 and 180.`);
     }
 
+    // Check cache first (if enabled)
+    if (CacheConfig.enabled) {
+      const cacheKey = Cache.generateKey('points', latitude.toFixed(4), longitude.toFixed(4));
+      const cached = this.cache.get(cacheKey);
+      if (cached) {
+        return cached as PointsResponse;
+      }
+
+      const url = `/points/${latitude.toFixed(4)},${longitude.toFixed(4)}`;
+      const result = await this.makeRequest<PointsResponse>(url);
+
+      // Cache with infinite TTL (grid coordinates never change)
+      this.cache.set(cacheKey, result, CacheConfig.ttl.gridCoordinates);
+      return result;
+    }
+
     const url = `/points/${latitude.toFixed(4)},${longitude.toFixed(4)}`;
     return this.makeRequest<PointsResponse>(url);
   }
@@ -239,6 +273,22 @@ export class NOAAService {
    * Get forecast for a location using grid coordinates
    */
   async getForecast(office: string, gridX: number, gridY: number): Promise<ForecastResponse> {
+    // Check cache first (if enabled)
+    if (CacheConfig.enabled) {
+      const cacheKey = Cache.generateKey('forecast', office, gridX, gridY);
+      const cached = this.cache.get(cacheKey);
+      if (cached) {
+        return cached as ForecastResponse;
+      }
+
+      const url = `/gridpoints/${office}/${gridX},${gridY}/forecast`;
+      const result = await this.makeRequest<ForecastResponse>(url);
+
+      // Cache with forecast TTL (2 hours)
+      this.cache.set(cacheKey, result, CacheConfig.ttl.forecast);
+      return result;
+    }
+
     const url = `/gridpoints/${office}/${gridX},${gridY}/forecast`;
     return this.makeRequest<ForecastResponse>(url);
   }
@@ -265,6 +315,22 @@ export class NOAAService {
    * Get nearest observation stations for a location
    */
   async getStations(latitude: number, longitude: number): Promise<StationCollectionResponse> {
+    // Check cache first (if enabled)
+    if (CacheConfig.enabled) {
+      const cacheKey = Cache.generateKey('stations', latitude.toFixed(4), longitude.toFixed(4));
+      const cached = this.cache.get(cacheKey);
+      if (cached) {
+        return cached as StationCollectionResponse;
+      }
+
+      const url = `/points/${latitude.toFixed(4)},${longitude.toFixed(4)}/stations`;
+      const result = await this.makeRequest<StationCollectionResponse>(url);
+
+      // Cache with stations TTL (24 hours - stations rarely change)
+      this.cache.set(cacheKey, result, CacheConfig.ttl.stations);
+      return result;
+    }
+
     const url = `/points/${latitude.toFixed(4)},${longitude.toFixed(4)}/stations`;
     return this.makeRequest<StationCollectionResponse>(url);
   }
@@ -273,6 +339,22 @@ export class NOAAService {
    * Get the latest observation from a station
    */
   async getLatestObservation(stationId: string): Promise<ObservationResponse> {
+    // Check cache first (if enabled)
+    if (CacheConfig.enabled) {
+      const cacheKey = Cache.generateKey('latest-observation', stationId);
+      const cached = this.cache.get(cacheKey);
+      if (cached) {
+        return cached as ObservationResponse;
+      }
+
+      const url = `/stations/${stationId}/observations/latest`;
+      const result = await this.makeRequest<ObservationResponse>(url);
+
+      // Cache with current conditions TTL (15 minutes)
+      this.cache.set(cacheKey, result, CacheConfig.ttl.currentConditions);
+      return result;
+    }
+
     const url = `/stations/${stationId}/observations/latest`;
     return this.makeRequest<ObservationResponse>(url);
   }
@@ -319,6 +401,22 @@ export class NOAAService {
 
     if (params.toString()) {
       url += `?${params.toString()}`;
+    }
+
+    // Check cache first (if enabled)
+    if (CacheConfig.enabled) {
+      const cacheKey = Cache.generateKey('observations', stationId, startTime?.toISOString(), endTime?.toISOString(), limit);
+      const cached = this.cache.get(cacheKey);
+      if (cached) {
+        return cached as ObservationCollectionResponse;
+      }
+
+      const result = await this.makeRequest<ObservationCollectionResponse>(url);
+
+      // Use smart TTL based on date range
+      const ttl = startTime ? getHistoricalDataTTL(startTime) : CacheConfig.ttl.recentHistorical;
+      this.cache.set(cacheKey, result, ttl);
+      return result;
     }
 
     return this.makeRequest<ObservationCollectionResponse>(url);

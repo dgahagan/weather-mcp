@@ -8,6 +8,8 @@ import type {
   OpenMeteoHistoricalResponse,
   OpenMeteoErrorResponse
 } from '../types/openmeteo.js';
+import { Cache } from '../utils/cache.js';
+import { CacheConfig, getHistoricalDataTTL } from '../config/cache.js';
 
 export interface OpenMeteoServiceConfig {
   baseURL?: string;
@@ -18,6 +20,7 @@ export interface OpenMeteoServiceConfig {
 export class OpenMeteoService {
   private client: AxiosInstance;
   private maxRetries: number;
+  private cache: Cache;
 
   constructor(config: OpenMeteoServiceConfig = {}) {
     const {
@@ -27,6 +30,7 @@ export class OpenMeteoService {
     } = config;
 
     this.maxRetries = maxRetries;
+    this.cache = new Cache(CacheConfig.maxSize);
 
     this.client = axios.create({
       baseURL,
@@ -159,6 +163,20 @@ export class OpenMeteoService {
   }
 
   /**
+   * Get cache statistics
+   */
+  getCacheStats() {
+    return this.cache.getStats();
+  }
+
+  /**
+   * Clear the cache
+   */
+  clearCache(): void {
+    this.cache.clear();
+  }
+
+  /**
    * Check if the Open-Meteo API is operational
    * Performs a lightweight health check by requesting a simple query
    * @returns Object with status information
@@ -259,6 +277,94 @@ export class OpenMeteoService {
       throw new Error(`Invalid longitude: ${longitude}. Must be between -180 and 180.`);
     }
 
+    // Check cache first (if enabled)
+    if (CacheConfig.enabled) {
+      const cacheKey = Cache.generateKey('openmeteo-historical', latitude, longitude, startDate, endDate, useHourly);
+      const cached = this.cache.get(cacheKey);
+      if (cached) {
+        return cached as OpenMeteoHistoricalResponse;
+      }
+
+      // Build request parameters
+      const params: Record<string, string | number> = {
+        latitude,
+        longitude,
+        start_date: startDate,
+        end_date: endDate,
+        temperature_unit: 'fahrenheit',
+        wind_speed_unit: 'mph',
+        precipitation_unit: 'inch',
+        timezone: 'auto'
+      };
+
+      // Request appropriate data granularity
+      if (useHourly) {
+        // Hourly data for detailed observations
+        params.hourly = [
+          'temperature_2m',
+          'relative_humidity_2m',
+          'dewpoint_2m',
+          'apparent_temperature',
+          'precipitation',
+          'rain',
+          'snowfall',
+          'weather_code',
+          'pressure_msl',
+          'cloud_cover',
+          'wind_speed_10m',
+          'wind_direction_10m',
+          'wind_gusts_10m'
+        ].join(',');
+      } else {
+        // Daily summaries for longer time periods
+        params.daily = [
+          'temperature_2m_max',
+          'temperature_2m_min',
+          'temperature_2m_mean',
+          'apparent_temperature_max',
+          'apparent_temperature_min',
+          'precipitation_sum',
+          'rain_sum',
+          'snowfall_sum',
+          'precipitation_hours',
+          'weather_code',
+          'wind_speed_10m_max',
+          'wind_gusts_10m_max',
+          'wind_direction_10m_dominant'
+        ].join(',');
+      }
+
+      const response = await this.makeRequest<OpenMeteoHistoricalResponse>(
+        '/archive',
+        params
+      );
+
+      // Validate response has data
+      if (useHourly && (!response.hourly || !response.hourly.time || response.hourly.time.length === 0)) {
+        throw new Error(
+          `No historical weather data available for the specified date range (${startDate} to ${endDate}).\n\n` +
+          'This may occur because:\n' +
+          '- The dates are too recent (data has a 5-day delay for most models)\n' +
+          '- The dates are before 1940 (earliest available data)\n\n' +
+          'Please try adjusting your date range.'
+        );
+      }
+
+      if (!useHourly && (!response.daily || !response.daily.time || response.daily.time.length === 0)) {
+        throw new Error(
+          `No historical weather data available for the specified date range (${startDate} to ${endDate}).\n\n` +
+          'Please try adjusting your date range.'
+        );
+      }
+
+      // Use smart TTL based on date range
+      const ttl = getHistoricalDataTTL(startDate);
+      this.cache.set(cacheKey, response, ttl);
+
+      return response;
+    }
+
+    // No caching - original logic
     // Build request parameters
     const params: Record<string, string | number> = {
       latitude,

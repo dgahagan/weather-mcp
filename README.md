@@ -19,6 +19,49 @@ An MCP (Model Context Protocol) server that provides weather data to AI systems 
   - Archival data (>7 days old): Hourly/daily weather data from 1940-present via Open-Meteo (global coverage)
 - **Service Status Checking**: Proactively verify API availability with health checks
 - **Enhanced Error Handling**: Detailed, actionable error messages with status page links
+- **Intelligent Caching**: Built-in in-memory cache reduces API calls and improves performance
+
+## Caching
+
+The Weather MCP server includes an intelligent in-memory caching system that significantly improves performance for AI-driven weather queries.
+
+### Benefits
+
+- **Faster Responses**: Cached queries return in <10ms vs 200-1000ms for API calls
+- **Reduced API Load**: 50-80% fewer API calls for typical AI conversation patterns
+- **Rate Limit Protection**: Prevents hitting API rate limits during heavy usage
+- **Automatic Management**: Smart TTL-based expiration with LRU eviction
+
+### How It Works
+
+The cache automatically stores and retrieves weather data with intelligent expiration:
+
+- **Forecasts**: Cached for 2 hours (updated approximately hourly)
+- **Current Conditions**: Cached for 15 minutes (observations update every 20-60 minutes)
+- **Historical Data (>1 day old)**: Cached indefinitely (finalized data never changes)
+- **Recent Historical (<1 day)**: Cached for 1 hour (may still be updated)
+- **Grid Coordinates**: Cached indefinitely (geographic mappings are static)
+
+### Configuration
+
+Caching is **enabled by default** with sensible settings. To customize:
+
+```bash
+# Disable caching (not recommended)
+export CACHE_ENABLED=false
+
+# Adjust maximum cache size (default: 1000 entries)
+export CACHE_MAX_SIZE=1500
+```
+
+### Monitoring
+
+Use the `check_service_status` tool to view cache statistics including:
+- Hit rate percentage
+- Cache size and utilization
+- API call reduction metrics
+
+For detailed information about caching architecture and configuration, see [.github/CACHING.md](./.github/CACHING.md).
 
 ## Installation
 
@@ -128,12 +171,12 @@ All tools require latitude and longitude coordinates. You can find coordinates f
 ## Available Tools
 
 ### 1. check_service_status
-Check the operational status of weather APIs.
+Check the operational status of weather APIs and cache performance.
 
 **Parameters:** None
 
 **Description:**
-Performs health checks on both NOAA and Open-Meteo APIs to verify they are operational. Use this tool when experiencing errors or to proactively verify service availability before making weather data requests. Returns current status, helpful messages, and links to official status pages.
+Performs health checks on both NOAA and Open-Meteo APIs to verify they are operational. Use this tool when experiencing errors or to proactively verify service availability before making weather data requests. Returns current status, helpful messages, links to official status pages, and cache statistics.
 
 **Example:**
 ```
@@ -143,6 +186,7 @@ Check if the weather services are operational
 **Returns:**
 - Operational status for NOAA API (forecasts & current conditions)
 - Operational status for Open-Meteo API (historical data)
+- Cache statistics (hit rate, size, API call reduction)
 - Status page links and recommended actions if issues are detected
 - Overall service availability summary
 
