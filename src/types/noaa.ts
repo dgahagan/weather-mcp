@@ -136,20 +136,20 @@ export interface ObservationProperties {
   }>;
   temperature: QuantitativeValue;
   dewpoint: QuantitativeValue;
-  windDirection: QuantitativeValue;
+  windDirection?: QuantitativeValue;
   windSpeed: QuantitativeValue;
-  windGust: QuantitativeValue;
-  barometricPressure: QuantitativeValue;
-  seaLevelPressure: QuantitativeValue;
-  visibility: QuantitativeValue;
-  maxTemperatureLast24Hours: QuantitativeValue;
-  minTemperatureLast24Hours: QuantitativeValue;
-  precipitationLastHour: QuantitativeValue;
-  precipitationLast3Hours: QuantitativeValue;
-  precipitationLast6Hours: QuantitativeValue;
+  windGust?: QuantitativeValue;
+  barometricPressure?: QuantitativeValue;
+  seaLevelPressure?: QuantitativeValue;
+  visibility?: QuantitativeValue;
+  maxTemperatureLast24Hours?: QuantitativeValue;
+  minTemperatureLast24Hours?: QuantitativeValue;
+  precipitationLastHour?: QuantitativeValue;
+  precipitationLast3Hours?: QuantitativeValue;
+  precipitationLast6Hours?: QuantitativeValue;
   relativeHumidity: QuantitativeValue;
-  windChill: QuantitativeValue;
-  heatIndex: QuantitativeValue;
+  windChill?: QuantitativeValue;
+  heatIndex?: QuantitativeValue;
   cloudLayers?: Array<{
     base: QuantitativeValue;
     amount: string; // "FEW", "SCT", "BKN", "OVC"

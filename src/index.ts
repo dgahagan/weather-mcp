@@ -316,21 +316,25 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           output += `**Temperature:** ${Math.round(tempF)}°F\n`;
 
           // Show heat index when temperature is high (>80°F) and heat index is available
-          const heatIndexF = toFahrenheit(props.heatIndex.value, props.heatIndex.unitCode);
-          if (heatIndexF !== null && tempF > 80 && heatIndexF > tempF) {
-            output += `**Feels Like (Heat Index):** ${Math.round(heatIndexF)}°F\n`;
+          if (props.heatIndex) {
+            const heatIndexF = toFahrenheit(props.heatIndex.value, props.heatIndex.unitCode);
+            if (heatIndexF !== null && tempF > 80 && heatIndexF > tempF) {
+              output += `**Feels Like (Heat Index):** ${Math.round(heatIndexF)}°F\n`;
+            }
           }
 
           // Show wind chill when temperature is low (<50°F) and wind chill is available
-          const windChillF = toFahrenheit(props.windChill.value, props.windChill.unitCode);
-          if (windChillF !== null && tempF < 50 && windChillF < tempF) {
-            output += `**Feels Like (Wind Chill):** ${Math.round(windChillF)}°F\n`;
+          if (props.windChill) {
+            const windChillF = toFahrenheit(props.windChill.value, props.windChill.unitCode);
+            if (windChillF !== null && tempF < 50 && windChillF < tempF) {
+              output += `**Feels Like (Wind Chill):** ${Math.round(windChillF)}°F\n`;
+            }
           }
         }
 
         // 24-hour temperature range
-        const max24F = toFahrenheit(props.maxTemperatureLast24Hours.value, props.maxTemperatureLast24Hours.unitCode);
-        const min24F = toFahrenheit(props.minTemperatureLast24Hours.value, props.minTemperatureLast24Hours.unitCode);
+        const max24F = props.maxTemperatureLast24Hours ? toFahrenheit(props.maxTemperatureLast24Hours.value, props.maxTemperatureLast24Hours.unitCode) : null;
+        const min24F = props.minTemperatureLast24Hours ? toFahrenheit(props.minTemperatureLast24Hours.value, props.minTemperatureLast24Hours.unitCode) : null;
         if (max24F !== null || min24F !== null) {
           let range = `**24-Hour Range:**`;
           if (max24F !== null) range += ` High ${Math.round(max24F)}°F`;
@@ -351,18 +355,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
 
         // Wind section
-        if (props.windSpeed.value !== null) {
+        if (props.windSpeed && props.windSpeed.value !== null) {
           const windMph = props.windSpeed.unitCode.includes('km_h')
             ? props.windSpeed.value * 0.621371
             : props.windSpeed.value * 2.23694; // m/s to mph
-          const windDir = props.windDirection.value;
+          const windDir = props.windDirection?.value ?? null;
           output += `**Wind:** ${Math.round(windMph)} mph`;
           if (windDir !== null) {
             output += ` from ${Math.round(windDir)}°`;
           }
 
           // Add wind gust if available and significant
-          if (props.windGust.value !== null) {
+          if (props.windGust && props.windGust.value !== null) {
             const gustMph = props.windGust.unitCode.includes('km_h')
               ? props.windGust.value * 0.621371
               : props.windGust.value * 2.23694;
@@ -373,13 +377,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           output += `\n`;
         }
 
-        if (props.barometricPressure.value !== null) {
+        if (props.barometricPressure && props.barometricPressure.value !== null) {
           const pressureInHg = props.barometricPressure.value * 0.0002953;
           output += `**Pressure:** ${pressureInHg.toFixed(2)} inHg\n`;
         }
 
         // Enhanced visibility and cloud cover
-        if (props.visibility.value !== null) {
+        if (props.visibility && props.visibility.value !== null) {
           const visibilityMiles = props.visibility.value * 0.000621371;
           output += `**Visibility:** ${visibilityMiles.toFixed(1)} miles`;
 
@@ -411,7 +415,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             .filter(layer => layer.amount)
             .map(layer => {
               const desc = cloudDescriptions[layer.amount] || layer.amount;
-              if (layer.base.value !== null) {
+              if (layer.base?.value !== null && layer.base?.value !== undefined) {
                 const heightFt = layer.base.unitCode.includes('m')
                   ? layer.base.value * 3.28084
                   : layer.base.value;
@@ -426,28 +430,28 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
 
         // Precipitation section
-        const precip1h = props.precipitationLastHour.value;
-        const precip3h = props.precipitationLast3Hours.value;
-        const precip6h = props.precipitationLast6Hours.value;
+        const precip1h = props.precipitationLastHour?.value ?? null;
+        const precip3h = props.precipitationLast3Hours?.value ?? null;
+        const precip6h = props.precipitationLast6Hours?.value ?? null;
 
         if (precip1h !== null || precip3h !== null || precip6h !== null) {
           output += `\n## Recent Precipitation\n`;
 
-          if (precip1h !== null) {
+          if (precip1h !== null && props.precipitationLastHour) {
             const precipIn = props.precipitationLastHour.unitCode.includes('mm')
               ? precip1h * 0.0393701
               : precip1h;
             output += `**Last Hour:** ${precipIn.toFixed(2)} inches\n`;
           }
 
-          if (precip3h !== null) {
+          if (precip3h !== null && props.precipitationLast3Hours) {
             const precipIn = props.precipitationLast3Hours.unitCode.includes('mm')
               ? precip3h * 0.0393701
               : precip3h;
             output += `**Last 3 Hours:** ${precipIn.toFixed(2)} inches\n`;
           }
 
-          if (precip6h !== null) {
+          if (precip6h !== null && props.precipitationLast6Hours) {
             const precipIn = props.precipitationLast6Hours.unitCode.includes('mm')
               ? precip6h * 0.0393701
               : precip6h;
