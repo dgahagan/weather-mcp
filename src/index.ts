@@ -238,28 +238,34 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         // Format the forecast for display
         let output = `# Weather Forecast (${granularity === 'hourly' ? 'Hourly' : 'Daily'})\n\n`;
         output += `**Location:** ${forecast.properties.elevation.value}m elevation\n`;
-        output += `**Updated:** ${new Date(forecast.properties.updated).toLocaleString()}\n`;
+        if (forecast.properties.updated) {
+          output += `**Updated:** ${new Date(forecast.properties.updated).toLocaleString()}\n`;
+        }
         output += `**Showing:** ${periods.length} ${granularity === 'hourly' ? 'hours' : 'periods'}\n\n`;
 
         for (const period of periods) {
-          output += `## ${period.name}\n`;
+          // For hourly forecasts, use the start time as the header since period names are empty
+          const periodHeader = granularity === 'hourly' && !period.name
+            ? new Date(period.startTime).toLocaleString()
+            : period.name;
+          output += `## ${periodHeader}\n`;
           output += `**Temperature:** ${period.temperature}°${period.temperatureUnit}`;
 
           // Add temperature trend if available
-          if (period.temperatureTrend) {
+          if (period.temperatureTrend && period.temperatureTrend.trim()) {
             output += ` (${period.temperatureTrend})`;
           }
           output += `\n`;
 
           // Add precipitation probability if requested and available
-          if (include_precipitation_probability && period.probabilityOfPrecipitation.value !== null) {
+          if (include_precipitation_probability && period.probabilityOfPrecipitation?.value !== null && period.probabilityOfPrecipitation?.value !== undefined) {
             output += `**Precipitation Chance:** ${period.probabilityOfPrecipitation.value}%\n`;
           }
 
           output += `**Wind:** ${period.windSpeed} ${period.windDirection}\n`;
 
           // Add humidity if available (more common in hourly forecasts)
-          if (period.relativeHumidity.value !== null) {
+          if (period.relativeHumidity?.value !== null && period.relativeHumidity?.value !== undefined) {
             output += `**Humidity:** ${period.relativeHumidity.value}%\n`;
           }
 
