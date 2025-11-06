@@ -154,6 +154,127 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extended TypeScript types for alert responses
 - Improved null/undefined handling for optional fields
 
+## [0.4.0] - 2025-11-06
+
+### Security Improvements
+
+#### Critical Security Fixes
+- **Enhanced Input Validation** - Comprehensive NaN and Infinity checks for all coordinate inputs
+  - Prevents edge case failures with invalid numeric values
+  - Validates latitude (-90 to 90) and longitude (-180 to 180) ranges
+  - Runtime type checking with `Number.isFinite()` validation
+  - Applied to all service methods in NOAA and Open-Meteo services
+
+#### Automated Security Monitoring
+- **Dependency Scanning** - Integrated npm audit for continuous vulnerability monitoring
+  - Added `npm run audit` and `npm run audit:fix` scripts
+  - Configured GitHub Dependabot for automated dependency updates
+  - Weekly security checks with automatic PR creation
+  - Zero vulnerabilities detected in current dependencies
+- **Security Policy** - Comprehensive SECURITY.md with vulnerability reporting process
+  - Responsible disclosure guidelines
+  - Response timeline commitments (48hr acknowledgment, 7-day assessment)
+  - Security best practices for users
+  - Supported versions and update policy
+
+#### Error Handling Improvements
+- **Custom Error Class Hierarchy** - Replaced generic errors with typed error classes
+  - `RateLimitError` for 429 rate limit responses with retry guidance
+  - `ServiceUnavailableError` for network/timeout failures with status page links
+  - `InvalidLocationError` for invalid coordinates or parameters
+  - `DataNotFoundError` for 404 responses (location outside coverage area)
+  - `ApiError` base class with service attribution and help links
+  - `ValidationError` for input validation failures
+- **Error Sanitization** - Prevents information leakage in error messages
+  - Network errors (ECONNREFUSED, ETIMEDOUT) sanitized to user-friendly messages
+  - Stack traces properly handled and not exposed to users
+  - Retryable errors clearly identified with `isRetryable` flag
+- **Consistent Error Format** - All errors include contextual help and official status page links
+
+### Reliability Improvements
+
+#### Retry Logic Enhancement
+- **Exponential Backoff with Jitter** - Prevents thundering herd during service recovery
+  - 50-100% randomized jitter added to retry delays
+  - Base delays: 1s, 2s, 4s for successive retries
+  - Distributes retry attempts over time to reduce service load spikes
+  - Applied to both NOAA and Open-Meteo service layers
+
+### Testing Infrastructure
+
+#### Comprehensive Test Suite Expansion
+- **247 Total Tests** (up from 131, +89% increase)
+  - Unit tests: 228 tests across 6 test files
+  - Integration tests: 19 tests for error recovery scenarios
+  - All tests passing with ~1 second execution time
+
+#### New Test Coverage
+- **Error Classes** - `tests/unit/errors.test.ts` (43 tests)
+  - 100% coverage on custom error hierarchy
+  - Tests for error message formatting, retryability, and inheritance
+  - Validation of error sanitization functions
+- **Cache Configuration** - `tests/unit/config.test.ts` (21 tests)
+  - TTL strategy validation for different data types
+  - Historical data aging logic tests
+  - Environment variable parsing and bounds checking
+- **Retry Logic** - `tests/unit/retry-logic.test.ts` (19 tests)
+  - Mathematical validation of exponential backoff algorithm
+  - Statistical distribution testing for jitter effectiveness
+  - Boundary condition and overflow protection tests
+- **Enhanced Units Tests** - `tests/unit/units.test.ts` (+33 tests, now 64 total)
+  - 100% coverage on all formatting functions
+  - Temperature, wind, visibility, pressure conversions
+  - Date/time formatting with locale support
+  - Cardinal direction mapping (16 directions)
+
+#### Coverage Achievements
+- **ApiError.ts**: 100% coverage (up from 0%)
+- **units.ts**: 100% coverage (up from 19.6%)
+- **cache.ts**: 100% coverage (maintained)
+- **validation.ts**: 100% coverage (maintained)
+- **Overall**: 54% statement coverage with 100% on critical utilities
+
+### Documentation
+
+#### Security Documentation
+- **SECURITY.md** - Comprehensive security policy
+  - Vulnerability reporting procedures
+  - Response timeline commitments
+  - Security best practices for users and developers
+  - Dependencies security guidance
+  - CI/CD security recommendations
+- **Security Audit Report** - `SECURITY_AUDIT.md`
+  - Overall security posture: B+ (Good)
+  - Risk level: LOW
+  - Zero critical or high-severity vulnerabilities
+  - Detailed findings and recommendations
+
+#### Code Quality Documentation
+- **Code Review Report** - Updated `CODE_REVIEW.md`
+  - All critical issues resolved
+  - High and medium priority items completed
+  - Comprehensive issue tracking with before/after analysis
+  - Security and maintainability improvements documented
+
+### Changed
+- Updated service error handling to use custom error classes
+- Enhanced coordinate validation in all API methods
+- Improved retry logic with jitter for better failure recovery
+
+### Infrastructure
+- Added Dependabot configuration (`.github/dependabot.yml`)
+- Integrated npm audit into development workflow
+- Enhanced test infrastructure with vitest coverage reporting
+- Added CI/CD readiness with fast, reliable test suite
+
+### Developer Experience
+- Improved error debugging with typed error classes
+- Better test organization with logical grouping
+- Comprehensive test coverage for critical code paths
+- Clear security guidelines for contributors
+
+---
+
 ## [Unreleased]
 
 ### Planned
@@ -163,17 +284,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Air quality data
 - Marine conditions
 - Fire weather indices
-- Automated testing suite
 - GitHub Actions for CI/CD
+- Service integration tests (handlers and MCP lifecycle)
 
 ---
 
 ## Version History
 
+- **[0.4.0]** - 2025-11-06 - Security & Quality Improvements (enhanced validation, error handling, testing)
 - **[0.3.0]** - TBD - Enhanced Core Tools (alerts, hourly forecasts, enhanced conditions)
 - **[0.2.0]** - 2025-11-05 - Added caching support
 - **[0.1.0]** - 2025-11-05 - Initial public release
 
+[0.4.0]: https://github.com/dgahagan/weather-mcp/releases/tag/v0.4.0
 [0.3.0]: https://github.com/dgahagan/weather-mcp/releases/tag/v0.3.0
 [0.2.0]: https://github.com/dgahagan/weather-mcp/releases/tag/v0.2.0
 [0.1.0]: https://github.com/dgahagan/weather-mcp/releases/tag/v0.1.0
