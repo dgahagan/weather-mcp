@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json",
   "name": "io.github.dgahagan/weather-mcp",
   "title": "Weather Data MCP Server",
-  "description": "Weather data from NOAA and Open-Meteo APIs with intelligent caching. Forecasts, current conditions, and historical data (1940-present).",
+  "description": "Weather forecasts, current conditions, and historical data (1940-present) with intelligent caching.",
   "version": "0.2.0",
   "packages": [
     {
