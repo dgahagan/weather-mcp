@@ -310,20 +310,6 @@ For each release:
 - [ ] Run `./mcp-publisher publish`
 - [ ] Verify publication in registry
 
-### Additional Registries (Optional)
-
-#### Smithery.ai Registry
-
-1. Visit https://smithery.ai
-2. Click "Submit a server"
-3. Provide npm package name: `@dangahagan/weather-mcp`
-4. Fill out server details
-
-#### Glama.ai Directory
-
-1. Visit https://glama.ai/mcp/servers
-2. Submit your server with npm package link
-
 ## Version Numbering (Semantic Versioning)
 
 Follow semantic versioning (semver):
