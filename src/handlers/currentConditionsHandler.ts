@@ -14,7 +14,8 @@ import {
   getRedFlagCategory,
   getCurrentFireWeatherValue,
   formatMixingHeight,
-  interpretTransportWind
+  interpretTransportWind,
+  getFireWeatherContext
 } from '../utils/fireWeather.js';
 import { extractSnowDepth, formatSnowData, hasWinterWeather } from '../utils/snow.js';
 import { formatInTimezone, guessTimezoneFromCoords } from '../utils/timezone.js';
@@ -246,40 +247,66 @@ export async function handleGetCurrentConditions(
       const mixingHeightValue = getCurrentFireWeatherValue(fireProps.mixingHeight);
       const transportWindValue = getCurrentFireWeatherValue(fireProps.transportWindSpeed);
 
-      if (hainesValue !== null || grasslandValue !== null || redFlagValue !== null || mixingHeightValue !== null) {
-        output += `\n## Fire Weather\n\n`;
+      // Get fire weather context
+      const context = getFireWeatherContext(
+        latitude,
+        longitude,
+        props.timestamp,
+        hainesValue,
+        grasslandValue,
+        redFlagValue,
+        props.relativeHumidity?.value ?? null
+      );
 
-        // Haines Index
-        if (hainesValue !== null) {
-          const hainesCategory = getHainesCategory(hainesValue);
-          const emoji = hainesCategory.level === 'Low' ? '🟢' :
-                        hainesCategory.level === 'Moderate' ? '🟡' :
-                        hainesCategory.level === 'High' ? '🟠' : '🔴';
+      output += `\n## Fire Weather\n\n`;
 
-          output += `**${emoji} Haines Index:** ${hainesValue} (${hainesCategory.level})\n`;
-          output += `${hainesCategory.fireGrowthPotential}\n\n`;
-        }
+      // If no fire danger indices, show contextual explanation
+      if (!context.hasIndices) {
+        const riskEmoji = context.seasonalRisk === 'Low' ? 'ℹ️' :
+                         context.seasonalRisk === 'Moderate' ? '🟡' :
+                         context.seasonalRisk === 'Elevated' ? '🟠' : '🔴';
+        output += `${riskEmoji} **Seasonal Fire Risk:** ${context.seasonalRisk}\n`;
+        output += `${context.explanatoryText}\n\n`;
+      }
 
-        // Grassland Fire Danger Index
-        if (grasslandValue !== null) {
-          const grasslandCategory = getGrasslandFireDangerCategory(grasslandValue);
-          const emoji = grasslandCategory.level === 'Low' ? '🟢' :
-                        grasslandCategory.level === 'Moderate' ? '🟡' :
-                        grasslandCategory.level === 'High' ? '🟠' : '🔴';
+      // Display fire danger indices if available
+      // Haines Index
+      if (hainesValue !== null) {
+        const hainesCategory = getHainesCategory(hainesValue);
+        const emoji = hainesCategory.level === 'Low' ? '🟢' :
+                      hainesCategory.level === 'Moderate' ? '🟡' :
+                      hainesCategory.level === 'High' ? '🟠' : '🔴';
 
-          output += `**${emoji} Grassland Fire Danger:** ${grasslandValue} (${grasslandCategory.level})\n`;
-          output += `${grasslandCategory.description}\n\n`;
-        }
+        output += `**${emoji} Haines Index:** ${hainesValue} (${hainesCategory.level})\n`;
+        output += `${hainesCategory.fireGrowthPotential}\n\n`;
+      }
 
-        // Red Flag Threat Index
-        if (redFlagValue !== null) {
-          const redFlagCategory = getRedFlagCategory(redFlagValue);
-          const emoji = redFlagCategory.level === 'Low' ? '🟢' :
-                        redFlagCategory.level === 'Moderate' ? '🟡' :
-                        redFlagCategory.level === 'High' ? '🟠' : '🔴';
+      // Grassland Fire Danger Index
+      if (grasslandValue !== null) {
+        const grasslandCategory = getGrasslandFireDangerCategory(grasslandValue);
+        const emoji = grasslandCategory.level === 'Low' ? '🟢' :
+                      grasslandCategory.level === 'Moderate' ? '🟡' :
+                      grasslandCategory.level === 'High' ? '🟠' : '🔴';
 
-          output += `**${emoji} Red Flag Threat:** ${Math.round(redFlagValue)} (${redFlagCategory.level})\n`;
-          output += `${redFlagCategory.description}\n\n`;
+        output += `**${emoji} Grassland Fire Danger:** ${grasslandValue} (${grasslandCategory.level})\n`;
+        output += `${grasslandCategory.description}\n\n`;
+      }
+
+      // Red Flag Threat Index
+      if (redFlagValue !== null) {
+        const redFlagCategory = getRedFlagCategory(redFlagValue);
+        const emoji = redFlagCategory.level === 'Low' ? '🟢' :
+                      redFlagCategory.level === 'Moderate' ? '🟡' :
+                      redFlagCategory.level === 'High' ? '🟠' : '🔴';
+
+        output += `**${emoji} Red Flag Threat:** ${Math.round(redFlagValue)} (${redFlagCategory.level})\n`;
+        output += `${redFlagCategory.description}\n\n`;
+      }
+
+      // Atmospheric monitoring (always show if available)
+      if (mixingHeightValue !== null || transportWindValue !== null) {
+        if (!context.hasIndices) {
+          output += `**Atmospheric Monitoring:**\n`;
         }
 
         // Mixing Height (important for smoke dispersion)
@@ -292,9 +319,13 @@ export async function handleGetCurrentConditions(
         if (transportWindValue !== null) {
           output += `**Transport Wind:** ${interpretTransportWind(transportWindValue)}\n`;
         }
-      } else {
-        output += `\n## Fire Weather\n\n`;
-        output += `No fire weather data available for this location.\n`;
+
+        if (!context.hasIndices) {
+          output += `\n*Fire danger indices (Haines Index, Grassland Fire Danger, Red Flag Threat) are calculated during elevated fire risk periods, typically during dry seasons or when Red Flag conditions are possible.*\n`;
+        }
+      } else if (!context.hasIndices) {
+        // No data at all available
+        output += `No atmospheric monitoring data available for this location.\n`;
       }
     } catch (error) {
       // If fire weather data fetch fails, just skip it (don't error the whole request)

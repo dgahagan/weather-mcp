@@ -179,3 +179,97 @@ export function interpretTransportWind(speedMph: number | null): string {
     return `${Math.round(speedMph)} mph (strong - rapid fire spread potential)`;
   }
 }
+
+/**
+ * Fire weather context information for when indices aren't available
+ */
+export interface FireWeatherContext {
+  hasIndices: boolean;
+  reason: string;
+  seasonalRisk: 'Low' | 'Moderate' | 'Elevated' | 'High';
+  explanatoryText: string;
+}
+
+/**
+ * Determine fire weather context and why indices may not be available
+ * Provides user-friendly explanations for missing fire weather data
+ */
+export function getFireWeatherContext(
+  latitude: number,
+  longitude: number,
+  timestamp: string,
+  hainesValue: number | null,
+  grasslandValue: number | null,
+  redFlagValue: number | null,
+  humidity?: number | null
+): FireWeatherContext {
+  const hasIndices = hainesValue !== null || grasslandValue !== null || redFlagValue !== null;
+
+  // Parse month from timestamp
+  const date = new Date(timestamp);
+  const month = date.getMonth() + 1; // 1-12
+
+  // Determine geographic region
+  const isWestern = longitude < -100; // Western US (higher fire risk regions)
+  const isSouthwest = latitude < 40 && longitude < -100; // Southwest US
+  const isCalifornia = latitude > 32 && latitude < 42 && longitude > -124 && longitude < -114;
+  const isSouthern = latitude < 35; // Southern states
+
+  // Determine seasonal fire risk
+  let seasonalRisk: 'Low' | 'Moderate' | 'Elevated' | 'High' = 'Low';
+  let reason = '';
+  let explanatoryText = '';
+
+  if (hasIndices) {
+    // Indices are present - fire conditions warrant monitoring
+    seasonalRisk = 'Elevated';
+    reason = 'Fire conditions warrant monitoring';
+    explanatoryText = 'Current atmospheric conditions support potential fire weather concerns.';
+  } else {
+    // Indices not present - determine why
+
+    // Check if it's winter (low fire season everywhere)
+    if (month >= 11 || month <= 3) {
+      seasonalRisk = 'Low';
+      reason = 'Winter/low fire season';
+
+      if (isCalifornia) {
+        // California can have winter fires (Santa Ana season)
+        explanatoryText = 'Out of peak fire season. Fire danger indices are calculated during elevated risk periods (typically spring-fall, or during Santa Ana wind events).';
+      } else if (isSouthern) {
+        explanatoryText = 'Winter season with minimal fire risk. Fire danger indices are calculated during dry periods with elevated fire potential.';
+      } else {
+        explanatoryText = 'Winter season with minimal fire risk due to cold temperatures, snow cover, or high humidity. Fire danger indices are calculated during dry, warm periods with elevated fire potential.';
+      }
+    } else if (month >= 4 && month <= 10) {
+      // Fire season months - but indices still not present
+      if (humidity !== null && humidity !== undefined && humidity > 70) {
+        seasonalRisk = 'Low';
+        reason = 'High humidity/recent precipitation';
+        explanatoryText = 'Current conditions (high humidity, recent precipitation) do not support significant fire weather threats. Fire danger indices are calculated when atmospheric conditions favor fire growth.';
+      } else if (isWestern || isSouthwest || isCalifornia) {
+        // Western US during fire season - indices should typically be present
+        seasonalRisk = 'Moderate';
+        reason = 'Favorable conditions';
+        explanatoryText = 'Current conditions do not meet thresholds for fire weather concerns. Fire danger indices are calculated during periods of low humidity, high temperatures, and strong winds.';
+      } else {
+        // Eastern US during summer
+        seasonalRisk = 'Low';
+        reason = 'Regional/seasonal factors';
+        explanatoryText = 'Low regional fire risk. Fire danger indices are primarily calculated for western states and during periods of drought or extreme fire weather conditions.';
+      }
+    } else {
+      // Shoulder season (early spring/late fall)
+      seasonalRisk = 'Low';
+      reason = 'Seasonal conditions';
+      explanatoryText = 'Current seasonal conditions do not support significant fire weather threats. Fire danger indices are calculated during periods of elevated fire risk.';
+    }
+  }
+
+  return {
+    hasIndices,
+    reason,
+    seasonalRisk,
+    explanatoryText
+  };
+}
