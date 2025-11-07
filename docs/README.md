@@ -56,7 +56,7 @@ This directory contains comprehensive documentation for the Weather MCP Server p
 
 ## Version Information
 
-- **Current Version:** 1.2.1 (Fire Weather Intelligence, Climate Normals, Snow/Ice, Timezone-Aware)
+- **Current Version:** 1.3.0 (Version Management, Auto-Updates, User Notifications)
 - **Security Posture:** A+ (Excellent)
 - **Test Coverage:** 722 tests, 100% on critical utilities
 - **Risk Level:** LOW

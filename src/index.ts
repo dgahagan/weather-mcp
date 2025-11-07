@@ -348,7 +348,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return await handleGetHistoricalWeather(args, noaaService, openMeteoService);
 
       case 'check_service_status':
-        return await handleCheckServiceStatus(noaaService, openMeteoService);
+        return await handleCheckServiceStatus(noaaService, openMeteoService, SERVER_VERSION);
 
       case 'search_location':
         return await handleSearchLocation(args, openMeteoService);
@@ -419,6 +419,14 @@ async function main() {
       version: SERVER_VERSION,
       cacheEnabled: CacheConfig.enabled,
       logLevel: process.env.LOG_LEVEL || 'INFO',
+    });
+
+    // Inform users about version and upgrade options
+    logger.info('Version check', {
+      installedVersion: SERVER_VERSION,
+      latestRelease: 'https://github.com/dgahagan/weather-mcp/releases/latest',
+      upgradeInstructions: 'https://github.com/dgahagan/weather-mcp#upgrading-to-latest-version',
+      autoUpdateTip: 'Use npx -y @dangahagan/weather-mcp@latest in MCP config for automatic updates'
     });
   } catch (error) {
     logger.error('Failed to start server', error as Error);

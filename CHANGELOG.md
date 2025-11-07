@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2025-11-07
+
+### Enhanced
+
+#### Version Management & User Updates - Keep Users on Latest Version
+- **NEW: Version Information in Status Check** - `check_service_status` tool now displays version info
+  - Shows installed version number
+  - Links to latest release on GitHub
+  - Links to CHANGELOG and upgrade instructions
+  - Recommends `@latest` tag for automatic updates
+  - Helps users discover when they're running outdated versions
+- **NEW: Startup Version Logging** - Server logs version info on startup
+  - Displays installed version in structured logs
+  - Includes links to latest release and upgrade instructions
+  - Provides tip for automatic updates via `npx @latest`
+  - Visible in MCP client logs for awareness
+- **Updated Installation Instructions** - README now recommends `@latest` tag
+  - All npx examples updated to use `@dangahagan/weather-mcp@latest`
+  - Ensures new users automatically get latest version on each run
+  - Reduces version drift across user base
+  - Addresses issue where several hundred users may be on older versions
+
+### Documentation
+- Updated README.md with `@latest` in all npx installation examples
+- Enhanced "Upgrading to Latest Version" section with clearer instructions
+- Updated "Quick Start: Claude Code" section with recommended configuration
+- Clarified npx caching behavior and upgrade workflow
+
+### Benefits
+- **Automatic Updates**: Users with `@latest` config stay current automatically
+- **Version Visibility**: Users can easily check their version via status tool
+- **Reduced Support**: Fewer issues from outdated versions
+- **Better UX**: Users discover new features and bug fixes faster
+
+**Migration Note**: Existing users should update their MCP configuration to use `@latest`:
+```json
+{
+  "mcpServers": {
+    "weather": {
+      "command": "npx",
+      "args": ["-y", "@dangahagan/weather-mcp@latest"]
+    }
+  }
+}
+```
+
 ## [1.2.1] - 2025-11-07
 
 ### Enhanced

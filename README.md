@@ -162,9 +162,9 @@ For detailed information about caching architecture and configuration, see [.git
 npm install -g @dangahagan/weather-mcp
 ```
 
-**Via npx (no installation):**
+**Via npx (no installation, always uses latest):**
 ```bash
-npx -y @dangahagan/weather-mcp
+npx -y @dangahagan/weather-mcp@latest
 ```
 
 Then configure in your MCP client using:
@@ -173,7 +173,7 @@ Then configure in your MCP client using:
   "mcpServers": {
     "weather": {
       "command": "npx",
-      "args": ["-y", "@dangahagan/weather-mcp"]
+      "args": ["-y", "@dangahagan/weather-mcp@latest"]
     }
   }
 }
@@ -206,6 +206,59 @@ npm install
 npm run build
 ```
 
+## Upgrading to Latest Version
+
+### Upgrading npm Installation
+
+If you installed via npm globally:
+
+```bash
+# Check your current version
+npm list -g @dangahagan/weather-mcp
+
+# Update to latest version
+npm update -g @dangahagan/weather-mcp
+
+# Or reinstall to ensure latest version
+npm install -g @dangahagan/weather-mcp@latest
+```
+
+**For npx users:** If you're using `@latest` (recommended), no upgrade needed! The `npx -y @dangahagan/weather-mcp@latest` command always fetches the newest version.
+
+### Upgrading from Source
+
+If you cloned the repository:
+
+```bash
+# Navigate to your installation directory
+cd /path/to/weather-mcp
+
+# Fetch latest changes
+git fetch origin
+
+# Check current version
+git describe --tags
+
+# Update to latest release
+git checkout main
+git pull origin main
+
+# Reinstall dependencies and rebuild
+npm install
+npm run build
+```
+
+**After upgrading:**
+- Restart your MCP client (Claude Desktop, Claude Code, etc.)
+- Check the changelog at [CHANGELOG.md](./CHANGELOG.md) for breaking changes
+- Verify the new version with the latest features
+
+**Version Check:**
+You can verify your installed version by checking:
+- npm: `npm list -g @dangahagan/weather-mcp`
+- Source: `git describe --tags` or check `package.json`
+- Latest release: https://github.com/dgahagan/weather-mcp/releases
+
 ## Usage with AI Assistants
 
 This MCP server works with any client that supports the Model Context Protocol, including:
@@ -225,6 +278,19 @@ For detailed setup instructions for each client, see **[CLIENT_SETUP.md](./docs/
 
 Edit `~/.config/claude-code/mcp_settings.json` (macOS/Linux) or `%APPDATA%\claude-code\mcp_settings.json` (Windows):
 
+**Recommended (npx, always latest):**
+```json
+{
+  "mcpServers": {
+    "weather": {
+      "command": "npx",
+      "args": ["-y", "@dangahagan/weather-mcp@latest"]
+    }
+  }
+}
+```
+
+**Alternative (from source):**
 ```json
 {
   "mcpServers": {

@@ -8,7 +8,8 @@ import { CacheConfig } from '../config/cache.js';
 
 export async function handleCheckServiceStatus(
   noaaService: NOAAService,
-  openMeteoService: OpenMeteoService
+  openMeteoService: OpenMeteoService,
+  serverVersion?: string
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
   // Check status of both services
   const noaaStatus = await noaaService.checkServiceStatus();
@@ -17,6 +18,16 @@ export async function handleCheckServiceStatus(
   // Format the status report
   let output = `# Weather API Service Status\n\n`;
   output += `**Check Time:** ${new Date().toLocaleString()}\n\n`;
+
+  // Server Version Information
+  if (serverVersion) {
+    output += `## Server Version\n\n`;
+    output += `**Installed Version:** ${serverVersion}\n`;
+    output += `**Latest Release:** https://github.com/dgahagan/weather-mcp/releases/latest\n`;
+    output += `**Changelog:** https://github.com/dgahagan/weather-mcp/blob/main/CHANGELOG.md\n`;
+    output += `**Upgrade Instructions:** See README.md "Upgrading to Latest Version" section\n\n`;
+    output += `*Tip: Use \`npx -y @dangahagan/weather-mcp@latest\` in your MCP config to always run the newest version.*\n\n`;
+  }
 
   // NOAA Status
   output += `## NOAA Weather API (Forecasts & Current Conditions)\n\n`;
