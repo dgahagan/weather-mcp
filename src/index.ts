@@ -128,6 +128,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               description: 'Include severe weather probabilities such as thunderstorm chance, wind gust probabilities, and tropical storm/hurricane risks (default: false, US/NOAA only)',
               default: false
             },
+            include_normals: {
+              type: 'boolean',
+              description: 'Include climate normals (30-year averages) for comparison with forecasted temperatures (default: false, daily forecasts only). Shows normal high/low and departure from normal for the first forecast day.',
+              default: false
+            },
             source: {
               type: 'string',
               description: 'Data source: "auto" (default, selects NOAA for US or Open-Meteo for international), "noaa" (US only), or "openmeteo" (global)',
@@ -331,7 +336,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     switch (name) {
       case 'get_forecast':
-        return await handleGetForecast(args, noaaService, openMeteoService);
+        return await handleGetForecast(args, noaaService, openMeteoService, nceiService);
 
       case 'get_current_conditions':
         return await handleGetCurrentConditions(args, noaaService, openMeteoService, nceiService);

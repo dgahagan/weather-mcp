@@ -6,6 +6,7 @@
 import { DateTime } from 'luxon';
 import { NOAAService } from '../services/noaa.js';
 import { OpenMeteoService } from '../services/openmeteo.js';
+import { NCEIService } from '../services/ncei.js';
 import type { GridpointProperties, GridpointDataSeries } from '../types/noaa.js';
 import {
   validateCoordinates,
@@ -21,6 +22,7 @@ import {
   hasWinterWeather
 } from '../utils/snow.js';
 import { formatInTimezone, guessTimezoneFromCoords } from '../utils/timezone.js';
+import { getClimateNormals, formatNormals, getDateComponents } from '../utils/normals.js';
 
 interface ForecastArgs {
   latitude?: number;
@@ -29,6 +31,7 @@ interface ForecastArgs {
   granularity?: 'daily' | 'hourly';
   include_precipitation_probability?: boolean;
   include_severe_weather?: boolean;
+  include_normals?: boolean;
   source?: 'auto' | 'noaa' | 'openmeteo';
 }
 
@@ -157,7 +160,8 @@ function formatSevereWeather(properties: GridpointProperties): string | null {
 export async function handleGetForecast(
   args: unknown,
   noaaService: NOAAService,
-  openMeteoService: OpenMeteoService
+  openMeteoService: OpenMeteoService,
+  nceiService?: NCEIService
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
   // Validate input parameters with runtime checks
   const { latitude, longitude } = validateCoordinates(args);
@@ -171,6 +175,11 @@ export async function handleGetForecast(
   const include_severe_weather = validateOptionalBoolean(
     (args as ForecastArgs)?.include_severe_weather,
     'include_severe_weather',
+    false
+  );
+  const include_normals = validateOptionalBoolean(
+    (args as ForecastArgs)?.include_normals,
+    'include_normals',
     false
   );
 
@@ -189,22 +198,27 @@ export async function handleGetForecast(
   if (useNOAA) {
     return await formatNOAAForecast(
       noaaService,
+      openMeteoService,
+      nceiService,
       latitude,
       longitude,
       days,
       granularity,
       include_precipitation_probability,
-      include_severe_weather
+      include_severe_weather,
+      include_normals
     );
   } else {
     // Use Open-Meteo for international locations
     return await formatOpenMeteoForecast(
       openMeteoService,
+      nceiService,
       latitude,
       longitude,
       days,
       granularity,
-      include_precipitation_probability
+      include_precipitation_probability,
+      include_normals
     );
   }
 }
@@ -214,12 +228,15 @@ export async function handleGetForecast(
  */
 async function formatNOAAForecast(
   noaaService: NOAAService,
+  openMeteoService: OpenMeteoService,
+  nceiService: NCEIService | undefined,
   latitude: number,
   longitude: number,
   days: number,
   granularity: 'daily' | 'hourly',
   include_precipitation_probability: boolean,
-  include_severe_weather: boolean
+  include_severe_weather: boolean,
+  include_normals: boolean
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
   // Get timezone for proper time formatting
   let timezone = guessTimezoneFromCoords(latitude, longitude);
@@ -336,6 +353,51 @@ async function formatNOAAForecast(
     // Winter weather data is optional, silently skip if unavailable
   }
 
+  // Add climate normals if requested and for daily forecasts only
+  if (include_normals && granularity === 'daily') {
+    try {
+      // Get the first forecast day to determine the date
+      const firstPeriod = periods[0];
+      if (firstPeriod && firstPeriod.startTime) {
+        const { month, day } = getDateComponents(firstPeriod.startTime);
+
+        // Fetch climate normals using hybrid strategy
+        const normals = await getClimateNormals(
+          openMeteoService,
+          nceiService,
+          latitude,
+          longitude,
+          month,
+          day
+        );
+
+        // Get forecasted high/low for comparison (first day)
+        let forecastHigh: number | undefined;
+        let forecastLow: number | undefined;
+
+        // NOAA gives day/night periods, so we need to find high (day) and low (night)
+        for (const period of periods.slice(0, 2)) { // Check first 2 periods (day + night)
+          if (period.isDaytime && period.temperature !== undefined) {
+            forecastHigh = period.temperature;
+          } else if (!period.isDaytime && period.temperature !== undefined) {
+            forecastLow = period.temperature;
+          }
+        }
+
+        const currentTemps = {
+          high: forecastHigh,
+          low: forecastLow
+        };
+
+        output += formatNormals(normals, currentTemps);
+      }
+    } catch (error) {
+      // If normals fetch fails, just skip it (don't error the whole request)
+      output += `\n## Climate Normals\n\n`;
+      output += `⚠️ Climate normals data not available for this location.\n`;
+    }
+  }
+
   return {
     content: [
       {
@@ -351,11 +413,13 @@ async function formatNOAAForecast(
  */
 async function formatOpenMeteoForecast(
   openMeteoService: OpenMeteoService,
+  nceiService: NCEIService | undefined,
   latitude: number,
   longitude: number,
   days: number,
   granularity: 'daily' | 'hourly',
-  include_precipitation_probability: boolean
+  include_precipitation_probability: boolean,
+  include_normals: boolean
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
   // Get forecast data from Open-Meteo
   const forecast = await openMeteoService.getForecast(
@@ -484,6 +548,43 @@ async function formatOpenMeteoForecast(
 
   output += `---\n`;
   output += `*Data source: Open-Meteo (Global)*\n`;
+
+  // Add climate normals if requested and for daily forecasts only
+  if (include_normals && granularity === 'daily' && forecast.daily) {
+    try {
+      // Get the first forecast day
+      const firstDay = forecast.daily.time[0];
+      if (firstDay) {
+        const { month, day } = getDateComponents(firstDay);
+
+        // Fetch climate normals using hybrid strategy
+        const normals = await getClimateNormals(
+          openMeteoService,
+          nceiService,
+          latitude,
+          longitude,
+          month,
+          day
+        );
+
+        // Get forecasted high/low for comparison (first day)
+        const currentTemps = {
+          high: forecast.daily.temperature_2m_max?.[0] !== undefined
+            ? Math.round(forecast.daily.temperature_2m_max[0])
+            : undefined,
+          low: forecast.daily.temperature_2m_min?.[0] !== undefined
+            ? Math.round(forecast.daily.temperature_2m_min[0])
+            : undefined
+        };
+
+        output += formatNormals(normals, currentTemps);
+      }
+    } catch (error) {
+      // If normals fetch fails, just skip it (don't error the whole request)
+      output += `\n## Climate Normals\n\n`;
+      output += `⚠️ Climate normals data not available for this location.\n`;
+    }
+  }
 
   return {
     content: [
