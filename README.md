@@ -12,7 +12,26 @@ An MCP (Model Context Protocol) server that provides **global weather data** to 
 
 ## Features
 
-- **Air Quality Monitoring**: Comprehensive air quality data for any location worldwide (NEW in v0.5.0)
+- **Marine Conditions**: Comprehensive marine weather for coastal and ocean areas (NEW in v0.6.0)
+  - Global coverage for waves, swell, and ocean currents
+  - Significant wave height with safety categorization (Calm to Extreme)
+  - Wind waves (locally generated) and swell (distant systems) separation
+  - Wave period and direction for planning
+  - Ocean current velocity and direction
+  - Optional 5-day marine forecast with daily summaries
+  - Safety assessment for maritime activities (sailing, boating, surfing)
+  - Wave interpretation guide based on Douglas Sea Scale
+  - Important: Data has limited coastal accuracy - NOT for navigation
+- **Severe Weather Probabilities**: Probabilistic severe weather forecasting (NEW in v0.6.0)
+  - US locations only (NOAA gridpoint data)
+  - Optional enhancement to forecasts (`include_severe_weather` parameter)
+  - Thunderstorm probability for next 48 hours
+  - Wind gust probabilities (20-60+ mph categories)
+  - Tropical storm and hurricane wind probabilities
+  - Lightning activity levels
+  - Smart display showing only significant threats
+  - Works with both daily and hourly forecasts
+- **Air Quality Monitoring**: Comprehensive air quality data for any location worldwide (v0.5.0)
   - Air Quality Index (AQI) with automatic region detection (US AQI or European EAQI)
   - Health recommendations based on AQI levels
   - Pollutant concentrations (PM2.5, PM10, O₃, NO₂, SO₂, CO, NH₃)
@@ -20,7 +39,7 @@ An MCP (Model Context Protocol) server that provides **global weather data** to 
   - Optional hourly air quality forecasts (5-day outlook)
   - Categorized health risk levels (Good, Moderate, Unhealthy, etc.)
   - Activity recommendations for sensitive populations
-- **Fire Weather Data**: Fire danger indices for US locations (NEW in v0.5.0)
+- **Fire Weather Data**: Fire danger indices for US locations (v0.5.0)
   - Haines Index (atmospheric fire growth potential)
   - Grassland Fire Danger Index
   - Red Flag Threat Index
@@ -73,8 +92,9 @@ The Weather MCP server includes an intelligent in-memory caching system that sig
 The cache automatically stores and retrieves weather data with intelligent expiration:
 
 - **Location Searches**: Cached for 30 days (locations don't move)
-- **Air Quality Data**: Cached for 1 hour (air quality updates hourly) - NEW in v0.5.0
-- **Fire Weather Data**: Cached for 2 hours (gridpoint data updates ~hourly) - NEW in v0.5.0
+- **Marine Conditions**: Cached for 1 hour (marine data updates hourly) - NEW in v0.6.0
+- **Air Quality Data**: Cached for 1 hour (air quality updates hourly) - v0.5.0
+- **Fire Weather Data**: Cached for 2 hours (gridpoint data updates ~hourly) - v0.5.0
 - **Weather Alerts**: Cached for 5 minutes (alerts can change rapidly)
 - **Forecasts**: Cached for 2 hours (updated approximately hourly)
 - **Current Conditions**: Cached for 15 minutes (observations update every 20-60 minutes)

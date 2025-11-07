@@ -7,6 +7,83 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2025-11-06
+
+### Added
+
+#### Marine Conditions Tool
+- **NEW TOOL: `get_marine_conditions`** - Comprehensive marine weather for coastal and ocean areas
+  - Global coverage via Open-Meteo Marine API
+  - Current marine conditions:
+    - **Significant Wave Height**: Average height of highest 1/3 of waves (meters and feet)
+    - **Wave Direction**: Cardinal direction of wave propagation
+    - **Wave Period**: Time between successive wave crests (longer = more powerful)
+    - **Wind Waves**: Locally generated waves from current winds
+      - Height, direction, period, and peak period
+    - **Swell**: Long-period waves from distant weather systems
+      - Height, direction, period, and peak period
+    - **Ocean Currents**: Velocity and direction (m/s and knots)
+  - Safety assessment with color-coded conditions:
+    - 🟢 Calm (0-2m): Safe for most vessels
+    - 🟡 Moderate (2-4m): Challenging for small craft
+    - 🟠 Rough (4-6m): Hazardous for small vessels
+    - 🔴 Very Rough (6-9m): Dangerous for most vessels
+    - 🟤 High (>9m): Extremely dangerous
+  - Optional 5-day marine forecast with daily summaries
+  - Wave height categorization based on Douglas Sea Scale
+  - Interpretation guidance for wave types and periods
+  - Important disclaimer about coastal accuracy limitations
+  - 1-hour cache for marine data
+
+#### Severe Weather Probabilities
+- **Enhanced `get_forecast`** with severe weather forecasting (US only)
+  - New parameter: `include_severe_weather` (boolean, default: false)
+  - Probabilistic severe weather data from NOAA gridpoint forecasts:
+    - **Thunderstorm Probability**: Likelihood of thunder in next 48 hours
+    - **Wind Gust Probabilities**: Categorized by intensity
+      - 20+ mph, 30+ mph, 40+ mph, 50+ mph, 60+ mph thresholds
+      - Shows highest risk category with percentage
+    - **Tropical Storm Winds**: Probability of 39-73 mph winds
+    - **Hurricane-Force Winds**: Probability of 74+ mph winds
+    - **Lightning Activity Level**: 1-5 scale with qualitative description
+  - Smart display logic:
+    - Only shows significant probabilities (filters low-risk data)
+    - Prioritizes highest wind gust category
+    - Includes emoji indicators for quick visual assessment
+  - Works with both daily and hourly forecast granularities
+  - Graceful fallback if severe weather data unavailable
+  - Maximum probability extraction over next 48 hours
+
+### Technical Changes
+- Added Open-Meteo Marine API integration
+  - New service client for `marine-api.open-meteo.com`
+  - Support for current, hourly, and daily marine data
+  - Comprehensive wave, swell, and current parameters
+- Enhanced NOAA gridpoint data with severe weather fields
+  - New type definitions: `GridpointSevereWeather` interface
+  - Added 11 new severe weather probability fields
+  - Lightning activity level support
+- New utility modules:
+  - `src/utils/marine.ts`: Wave height categorization, safety assessment, activity suitability
+  - Helper functions for wave/current formatting with unit conversions
+- New handler: `src/handlers/marineConditionsHandler.ts`
+- Enhanced forecast handler with severe weather formatting
+  - `formatSevereWeather()`: Extracts and formats gridpoint probabilities
+  - `getMaxProbabilityFromSeries()`: Time-windowed probability analysis
+- Comprehensive test coverage:
+  - `tests/test_marine_conditions.ts`: 7 integration tests for marine weather
+  - `tests/test_severe_weather.ts`: 5 integration tests for severe forecasts
+  - `tests/test_noaa_gridpoint.ts`: Gridpoint API exploration
+- Updated version to 0.6.0 across all service user-agents
+
+### Documentation
+- Updated tool descriptions with marine and severe weather capabilities
+- Added semantic trigger phrases for AI tool selection:
+  - Marine: "ocean conditions", "wave height", "surf conditions", "safe to boat"
+  - Severe weather: "thunderstorm chance", "wind gusts", "tropical storm"
+- Enhanced safety disclaimers for marine navigation
+- Added interpretation guides for wave conditions and severe weather probabilities
+
 ## [0.5.0] - 2025-11-06
 
 ### Added
