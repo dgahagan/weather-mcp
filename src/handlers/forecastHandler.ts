@@ -3,6 +3,7 @@
  * Supports both NOAA (US) and Open-Meteo (global) forecast sources
  */
 
+import { DateTime } from 'luxon';
 import { NOAAService } from '../services/noaa.js';
 import { OpenMeteoService } from '../services/openmeteo.js';
 import type { GridpointProperties, GridpointDataSeries } from '../types/noaa.js';
@@ -19,6 +20,7 @@ import {
   formatSnowData,
   hasWinterWeather
 } from '../utils/snow.js';
+import { formatInTimezone, guessTimezoneFromCoords } from '../utils/timezone.js';
 
 interface ForecastArgs {
   latitude?: number;
@@ -219,6 +221,16 @@ async function formatNOAAForecast(
   include_precipitation_probability: boolean,
   include_severe_weather: boolean
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
+  // Get timezone for proper time formatting
+  let timezone = guessTimezoneFromCoords(latitude, longitude);
+  try {
+    const points = await noaaService.getPointData(latitude, longitude);
+    if (points.properties.timeZone) {
+      timezone = points.properties.timeZone;
+    }
+  } catch (error) {
+    // Use fallback timezone
+  }
   // Get forecast data based on granularity
   const forecast = granularity === 'hourly'
     ? await noaaService.getHourlyForecastByCoordinates(latitude, longitude)
@@ -239,14 +251,14 @@ async function formatNOAAForecast(
   output += `**Location:** ${latitude.toFixed(4)}, ${longitude.toFixed(4)}\n`;
   output += `**Elevation:** ${forecast.properties.elevation.value}m\n`;
   if (forecast.properties.updated) {
-    output += `**Updated:** ${new Date(forecast.properties.updated).toLocaleString()}\n`;
+    output += `**Updated:** ${formatInTimezone(forecast.properties.updated, timezone)}\n`;
   }
   output += `**Showing:** ${periods.length} ${granularity === 'hourly' ? 'hours' : 'periods'}\n\n`;
 
   for (const period of periods) {
     // For hourly forecasts, use the start time as the header since period names are empty
     const periodHeader = granularity === 'hourly' && !period.name
-      ? new Date(period.startTime).toLocaleString()
+      ? formatInTimezone(period.startTime, timezone, 'short')
       : period.name;
     output += `## ${periodHeader}\n`;
     output += `**Temperature:** ${period.temperature}°${period.temperatureUnit}`;
@@ -365,8 +377,7 @@ async function formatOpenMeteoForecast(
     const numHours = Math.min(hourly.time.length, days * 24);
 
     for (let i = 0; i < numHours; i++) {
-      const time = new Date(hourly.time[i]);
-      output += `## ${time.toLocaleString()}\n`;
+      output += `## ${formatInTimezone(hourly.time[i], forecast.timezone, 'short')}\n`;
 
       if (hourly.temperature_2m?.[i] !== undefined) {
         output += `**Temperature:** ${Math.round(hourly.temperature_2m[i])}°F`;
@@ -411,8 +422,9 @@ async function formatOpenMeteoForecast(
     const numDays = Math.min(daily.time.length, days);
 
     for (let i = 0; i < numDays; i++) {
-      const date = new Date(daily.time[i]);
-      output += `## ${date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}\n`;
+      // Use timezone-aware date formatting
+      const dt = DateTime.fromISO(daily.time[i], { setZone: false }).setZone(forecast.timezone);
+      output += `## ${dt.toLocaleString({ weekday: 'long', month: 'long', day: 'numeric' })}\n`;
 
       if (daily.temperature_2m_max?.[i] !== undefined && daily.temperature_2m_min?.[i] !== undefined) {
         output += `**Temperature:** High ${Math.round(daily.temperature_2m_max[i])}°F / Low ${Math.round(daily.temperature_2m_min[i])}°F\n`;
@@ -422,15 +434,15 @@ async function formatOpenMeteoForecast(
         output += `**Feels Like:** High ${Math.round(daily.apparent_temperature_max[i])}°F / Low ${Math.round(daily.apparent_temperature_min[i])}°F\n`;
       }
 
-      // Include sunrise/sunset data
+      // Include sunrise/sunset data with timezone
       if (daily.sunrise?.[i]) {
-        const sunrise = new Date(daily.sunrise[i]);
-        output += `**Sunrise:** ${sunrise.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}\n`;
+        const sunrise = DateTime.fromISO(daily.sunrise[i], { setZone: false }).setZone(forecast.timezone);
+        output += `**Sunrise:** ${sunrise.toLocaleString(DateTime.TIME_SIMPLE)}\n`;
       }
 
       if (daily.sunset?.[i]) {
-        const sunset = new Date(daily.sunset[i]);
-        output += `**Sunset:** ${sunset.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}\n`;
+        const sunset = DateTime.fromISO(daily.sunset[i], { setZone: false }).setZone(forecast.timezone);
+        output += `**Sunset:** ${sunset.toLocaleString(DateTime.TIME_SIMPLE)}\n`;
       }
 
       if (daily.daylight_duration?.[i] !== undefined) {
