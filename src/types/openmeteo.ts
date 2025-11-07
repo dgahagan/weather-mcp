@@ -587,3 +587,22 @@ export interface OpenMeteoMarineResponse {
   daily_units?: OpenMeteoDailyMarineUnits;
   daily?: OpenMeteoDailyMarineData;
 }
+
+/**
+ * Climate normals data (30-year averages)
+ * Used for comparing current/forecast conditions to historical averages
+ */
+export interface ClimateNormals {
+  /** Normal high temperature in °F */
+  tempHigh: number;
+  /** Normal low temperature in °F */
+  tempLow: number;
+  /** Normal precipitation in inches */
+  precipitation: number;
+  /** Source of normals data */
+  source: 'NCEI' | 'Open-Meteo';
+  /** Month (1-12) */
+  month: number;
+  /** Day of month (1-31) */
+  day: number;
+}

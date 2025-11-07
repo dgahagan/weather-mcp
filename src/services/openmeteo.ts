@@ -15,12 +15,14 @@ import type {
   GeocodingResponse,
   OpenMeteoForecastResponse,
   OpenMeteoAirQualityResponse,
-  OpenMeteoMarineResponse
+  OpenMeteoMarineResponse,
+  ClimateNormals
 } from '../types/openmeteo.js';
 import { Cache } from '../utils/cache.js';
 import { CacheConfig, getHistoricalDataTTL } from '../config/cache.js';
 import { validateLatitude, validateLongitude } from '../utils/validation.js';
 import { logger } from '../utils/logger.js';
+import { computeNormalsFrom30YearData, getNormalsCacheKey } from '../utils/normals.js';
 import {
   RateLimitError,
   ServiceUnavailableError,
@@ -1122,5 +1124,107 @@ export class OpenMeteoService {
         'No hourly marine forecast data available for the specified location'
       );
     }
+  }
+
+  /**
+   * Compute climate normals (30-year averages) for a specific date
+   *
+   * Fetches 30 years of historical data (1991-2020) and computes averages
+   * for the specified month/day. Results are cached indefinitely since
+   * climate normals don't change.
+   *
+   * @param latitude - Latitude (-90 to 90)
+   * @param longitude - Longitude (-180 to 180)
+   * @param month - Month (1-12)
+   * @param day - Day of month (1-31)
+   * @returns Climate normals (30-year averages) in Fahrenheit and inches
+   * @throws {InvalidLocationError} If coordinates are invalid
+   * @throws {DataNotFoundError} If no historical data available
+   * @throws {ServiceUnavailableError} If Open-Meteo API is unavailable
+   */
+  async getClimateNormals(
+    latitude: number,
+    longitude: number,
+    month: number,
+    day: number
+  ): Promise<ClimateNormals> {
+    validateLatitude(latitude);
+    validateLongitude(longitude);
+
+    // Check cache first (normals don't change, so cache forever)
+    const cacheKey = getNormalsCacheKey(latitude, longitude, month, day);
+    const cached = this.cache.get(cacheKey) as ClimateNormals | undefined;
+    if (cached) {
+      logger.info('Climate normals cache hit', { latitude, longitude, month, day });
+      return cached;
+    }
+
+    logger.info('Computing climate normals from 30-year historical data', {
+      latitude,
+      longitude,
+      month,
+      day
+    });
+
+    // Fetch 30 years of historical data (1991-2020 climate normals period)
+    // Optimization: Fetch only the target month ±1 month across 30 years
+    // to reduce data transfer while ensuring we capture all occurrences
+    const startYear = 1991;
+    const endYear = 2020;
+
+    // Determine month range to fetch (target month ±1 to handle edge cases)
+    const startMonth = month === 1 ? 12 : month - 1;
+    const endMonth = month === 12 ? 1 : month + 1;
+
+    const startDate = `${startYear}-${String(startMonth).padStart(2, '0')}-01`;
+    const endDate = `${endYear}-${String(endMonth).padStart(2, '0')}-${this.getLastDayOfMonth(endYear, endMonth)}`;
+
+    // Build request parameters
+    const params: Record<string, string | number> = {
+      latitude,
+      longitude,
+      start_date: startDate,
+      end_date: endDate,
+      daily: 'temperature_2m_max,temperature_2m_min,precipitation_sum',
+      timezone: 'UTC' // Use UTC for consistency
+    };
+
+    try {
+      // Make request to historical API
+      const response = await this.makeRequest<OpenMeteoHistoricalResponse>('/archive', params);
+
+      // Compute normals from 30-year data
+      const normals = computeNormalsFrom30YearData(response, month, day);
+
+      // Cache indefinitely (normals don't change)
+      this.cache.set(cacheKey, normals, Infinity);
+
+      logger.info('Climate normals computed successfully', {
+        latitude,
+        longitude,
+        month,
+        day,
+        tempHigh: normals.tempHigh,
+        tempLow: normals.tempLow,
+        precipitation: normals.precipitation
+      });
+
+      return normals;
+    } catch (error) {
+      logger.error('Failed to compute climate normals', error as Error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the last day of a given month
+   * @private
+   */
+  private getLastDayOfMonth(year: number, month: number): string {
+    // Create date at start of next month, then go back 1 day
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const nextYear = month === 12 ? year + 1 : year;
+    const lastDay = new Date(nextYear, nextMonth - 1, 0).getDate();
+    return String(lastDay).padStart(2, '0');
   }
 }
