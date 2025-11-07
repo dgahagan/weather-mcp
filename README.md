@@ -383,6 +383,88 @@ If you get "No historical data available":
 - Note: Most recent data has a 5-day delay
 - Very recent dates (last 5 days) may not be available in archival data yet
 
+### 6. get_alerts
+Get active weather alerts, watches, warnings, and advisories for US locations.
+
+**Parameters:**
+- `latitude` (required): Latitude coordinate (-90 to 90)
+- `longitude` (required): Longitude coordinate (-180 to 180)
+- `active_only` (optional): Show only active alerts (default: true)
+
+**Description:**
+Retrieves current weather alerts from the NOAA API for safety-critical weather information. Returns severity levels (Extreme, Severe, Moderate, Minor), urgency indicators, effective/expiration times, and affected areas. Alerts are automatically sorted by severity with the most critical first.
+
+**Examples:**
+```
+"Are there any weather alerts for Miami, Florida?"
+"Check for severe weather warnings in Oklahoma City"
+"What weather watches are active in my area?" (latitude: 40.7128, longitude: -74.0060)
+```
+
+**Returns:**
+- Alert type and severity (Extreme → Severe → Moderate → Minor)
+- Urgency, certainty, and response type
+- Event description and instructions
+- Effective and expiration times
+- Affected geographic areas
+- Recommended actions and safety information
+
+### 7. get_air_quality (NEW in v0.5.0)
+Get comprehensive air quality data for any location worldwide.
+
+**Parameters:**
+- `latitude` (required): Latitude coordinate (-90 to 90)
+- `longitude` (required): Longitude coordinate (-180 to 180)
+- `forecast` (optional): Include hourly forecast for next 5 days (default: false)
+
+**Description:**
+Provides current air quality conditions using the Open-Meteo Air Quality API with automatic AQI scale selection (US AQI for US locations, European EAQI elsewhere). Includes health recommendations, pollutant concentrations, and UV index.
+
+**Examples:**
+```
+"What's the air quality in Los Angeles?"
+"Check pollution levels in Beijing"
+"Get air quality forecast for Paris for the next 5 days"
+```
+
+**Returns:**
+- Air Quality Index (AQI) with appropriate scale (US or European)
+- Health risk category and recommendations
+- Pollutant concentrations (PM2.5, PM10, O₃, NO₂, SO₂, CO, NH₃)
+- UV Index with sun protection guidance
+- Activity recommendations for sensitive groups
+- Optional 5-day hourly forecast
+
+### 8. get_marine_conditions (NEW in v0.6.0)
+Get marine weather conditions including wave height, swell, ocean currents, and sea state.
+
+**Parameters:**
+- `latitude` (required): Latitude coordinate (-90 to 90)
+- `longitude` (required): Longitude coordinate (-180 to 180)
+- `forecast` (optional): Include 5-day marine forecast (default: false)
+
+**Description:**
+Provides comprehensive marine weather data using the Open-Meteo Marine API with global ocean coverage. Includes significant wave height with Douglas Sea Scale categorization, wind waves vs swell separation, wave period/direction, ocean currents, and safety assessment for maritime activities.
+
+**Important:** Data has limited accuracy in coastal areas and is NOT suitable for coastal navigation - always consult official marine forecasts.
+
+**Examples:**
+```
+"What are the ocean conditions off the coast of California?"
+"Get wave height and swell for surfing in Hawaii"
+"Check marine conditions in the Atlantic Ocean" (latitude: 30.0, longitude: -60.0)
+```
+
+**Returns:**
+- Significant wave height (meters/feet) with safety category
+- Wind waves (locally generated) height and direction
+- Swell height, period, and direction (from distant systems)
+- Ocean current velocity and direction
+- Sea state interpretation (Calm → Phenomenal based on Douglas Sea Scale)
+- Safety assessment for maritime activities
+- Wave period for planning and safety
+- Optional 5-day forecast with daily summaries
+
 ## Error Handling & Service Status
 
 ### Enhanced Error Messages
