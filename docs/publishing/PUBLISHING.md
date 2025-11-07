@@ -11,7 +11,7 @@ For experienced users, here's the recommended publishing workflow:
 3. **Build & test** → Run `npm run build` and `npm test`
 4. **Publish to npm** → Run `npm publish --access public`
 5. **Create GitHub release** → Use `gh release create` or web UI
-6. **Publish to MCP registry** → Run `./mcp-publisher publish`
+6. **Publish to MCP registry** → Run `./mcp-publisher login github` then `./mcp-publisher publish`
 7. **Verify** → Check npm, GitHub releases, and MCP registry
 
 See detailed instructions below for each step.
@@ -418,25 +418,44 @@ cp ./bin/mcp-publisher /path/to/weather-mcp/
 
 For this project, the `mcp-publisher` binary is already in the project root.
 
-### 5.3 Authenticate with GitHub
+### 5.3 Authenticate with GitHub (ALWAYS DO THIS FIRST)
 
-Authentication tokens expire, so you may need to re-authenticate periodically.
+**⚠️ IMPORTANT:** Authentication tokens expire frequently (often between releases). **ALWAYS login first** before attempting to publish to avoid authentication errors.
+
+**Recommended Workflow:**
+```bash
+# Step 1: Login first (ALWAYS)
+./mcp-publisher login github
+
+# Step 2: Then publish immediately after successful login
+./mcp-publisher publish
+```
+
+**Authentication Process:**
 
 ```bash
 # Using local binary
 ./mcp-publisher login github
 
-# Using installed binary
+# Using installed binary (if installed globally)
 mcp-publisher login github
 ```
 
 This will:
-1. Display a GitHub device code (e.g., `DC5F-D551`)
+1. Display a GitHub device code (e.g., `CE98-5582`)
 2. Prompt you to visit https://github.com/login/device
 3. Ask you to enter the code and authorize the application
 4. Save authentication credentials locally
+5. Display "✓ Successfully logged in"
 
 **Note:** Keep your terminal window open during this process.
+
+**Why login first?** Authentication tokens expire between releases (days/weeks), and attempting to publish with an expired token will fail with:
+```
+Error: publish failed: server returned status 401: {"title":"Unauthorized","status":401,"detail":"Invalid or expired Registry JWT token"}
+```
+
+By logging in first, you avoid this error and save time.
 
 ### 5.4 Publish to Registry
 
@@ -444,7 +463,10 @@ This will:
 # Make sure server.json is committed and pushed (should be done in Step 0)
 git status  # Verify clean working tree
 
-# Publish to registry
+# IMPORTANT: Login first (tokens expire frequently)
+./mcp-publisher login github
+
+# Then publish to registry
 ./mcp-publisher publish
 ```
 
@@ -705,7 +727,7 @@ The complete publishing workflow:
 3. ✅ Build and test (`npm run build && npm test`)
 4. ✅ Publish to npm (`npm publish --access public`)
 5. ✅ Create GitHub release (`gh release create` or web UI)
-6. ✅ Publish to MCP Registry (`./mcp-publisher publish`)
+6. ✅ Publish to MCP Registry (`./mcp-publisher login github && ./mcp-publisher publish`)
 7. ✅ Verify all publications
 8. ✅ Test installation with npx
 
