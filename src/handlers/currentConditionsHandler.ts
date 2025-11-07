@@ -14,6 +14,7 @@ import {
   formatMixingHeight,
   interpretTransportWind
 } from '../utils/fireWeather.js';
+import { extractSnowDepth, formatSnowData, hasWinterWeather } from '../utils/snow.js';
 
 interface CurrentConditionsArgs {
   latitude?: number;
@@ -193,6 +194,15 @@ export async function handleGetCurrentConditions(
         ? precip6h * 0.0393701
         : precip6h;
       output += `**Last 6 Hours:** ${precipIn.toFixed(2)} inches\n`;
+    }
+  }
+
+  // Winter Weather section (snow depth if available)
+  const snowDepth = extractSnowDepth(props);
+  if (snowDepth) {
+    const snowData = { snowDepth };
+    if (hasWinterWeather(snowData)) {
+      output += formatSnowData(snowData);
     }
   }
 

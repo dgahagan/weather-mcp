@@ -13,6 +13,12 @@ import {
   validateOptionalBoolean,
 } from '../utils/validation.js';
 import { logger } from '../utils/logger.js';
+import {
+  extractSnowfallForecast,
+  extractIceAccumulation,
+  formatSnowData,
+  hasWinterWeather
+} from '../utils/snow.js';
 
 interface ForecastArgs {
   latitude?: number;
@@ -274,10 +280,13 @@ async function formatNOAAForecast(
   output += `---\n`;
   output += `*Data source: NOAA National Weather Service (US)*\n`;
 
+  // Fetch gridpoint data once for both severe weather and winter weather
+  let gridpointData: Awaited<ReturnType<typeof noaaService.getGridpointDataByCoordinates>> | null = null;
+
   // Add severe weather probabilities if requested
   if (include_severe_weather) {
     try {
-      const gridpointData = await noaaService.getGridpointDataByCoordinates(latitude, longitude);
+      gridpointData = await noaaService.getGridpointDataByCoordinates(latitude, longitude);
       const severeWeatherSection = formatSevereWeather(gridpointData.properties);
       if (severeWeatherSection) {
         output += `\n${severeWeatherSection}`;
@@ -286,6 +295,33 @@ async function formatNOAAForecast(
       // If severe weather data is unavailable, just note it without failing the whole request
       output += `\n*Note: Severe weather probability data is not available for this location.*\n`;
     }
+  }
+
+  // Add winter weather (snowfall/ice) if available
+  try {
+    // Fetch gridpoint data if we haven't already
+    if (!gridpointData) {
+      gridpointData = await noaaService.getGridpointDataByCoordinates(latitude, longitude);
+    }
+
+    // Calculate time range for forecast period
+    const now = new Date();
+    const endTime = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+
+    // Extract snowfall and ice accumulation
+    const snowfall = extractSnowfallForecast(gridpointData.properties, now, endTime);
+    const ice = extractIceAccumulation(gridpointData.properties, now, endTime);
+
+    const winterData = {
+      snowfallAmount: snowfall,
+      iceAccumulation: ice
+    };
+
+    if (hasWinterWeather(winterData)) {
+      output += formatSnowData(winterData);
+    }
+  } catch (error) {
+    // Winter weather data is optional, silently skip if unavailable
   }
 
   return {
