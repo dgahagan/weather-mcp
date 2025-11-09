@@ -31,6 +31,7 @@ import { handleGetAirQuality } from './handlers/airQualityHandler.js';
 import { handleGetMarineConditions } from './handlers/marineConditionsHandler.js';
 import { getWeatherImagery, formatWeatherImageryResponse } from './handlers/weatherImageryHandler.js';
 import { getLightningActivity, formatLightningActivityResponse } from './handlers/lightningHandler.js';
+import { handleGetRiverConditions } from './handlers/riverConditionsHandler.js';
 
 /**
  * Server information
@@ -408,6 +409,36 @@ const TOOL_DEFINITIONS = {
       },
       required: ['latitude', 'longitude']
     }
+  },
+
+  get_river_conditions: {
+    name: 'get_river_conditions' as const,
+    description: 'Monitor river levels and flood status for a location (US only). Use this when asked about "river flooding", "river level", "flood stage", "streamflow", "safe to kayak", or "river conditions". Returns current river gauge data within specified radius including river stage, flow rate, flood category levels (action/minor/moderate/major), and forecasted conditions. Provides safety assessment based on flood stages. SAFETY-CRITICAL tool for flood-prone areas and water recreation.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        latitude: {
+          type: 'number' as const,
+          description: 'Latitude of the location (-90 to 90)',
+          minimum: -90,
+          maximum: 90
+        },
+        longitude: {
+          type: 'number' as const,
+          description: 'Longitude of the location (-180 to 180)',
+          minimum: -180,
+          maximum: 180
+        },
+        radius: {
+          type: 'number' as const,
+          description: 'Search radius in kilometers (1-500, default: 50)',
+          minimum: 1,
+          maximum: 500,
+          default: 50
+        }
+      },
+      required: ['latitude', 'longitude']
+    }
   }
 };
 
@@ -487,6 +518,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           ]
         };
       }
+
+      case 'get_river_conditions':
+        return await handleGetRiverConditions(args, noaaService);
 
       default:
         throw new Error(`Unknown tool: ${name}`);

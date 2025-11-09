@@ -24,7 +24,8 @@ export type ToolName =
   | 'get_air_quality'
   | 'get_marine_conditions'
   | 'get_weather_imagery'
-  | 'get_lightning_activity';
+  | 'get_lightning_activity'
+  | 'get_river_conditions';
 
 /**
  * Tool presets for easy configuration
@@ -71,7 +72,8 @@ const TOOL_PRESETS: Record<string, ToolName[]> = {
     'get_air_quality',
     'get_marine_conditions',
     'get_weather_imagery',
-    'get_lightning_activity'
+    'get_lightning_activity',
+    'get_river_conditions'
   ]
 };
 
@@ -99,7 +101,11 @@ const TOOL_ALIASES: Record<string, ToolName> = {
   'satellite': 'get_weather_imagery',
   'lightning': 'get_lightning_activity',
   'strikes': 'get_lightning_activity',
-  'thunderstorm': 'get_lightning_activity'
+  'thunderstorm': 'get_lightning_activity',
+  'river': 'get_river_conditions',
+  'rivers': 'get_river_conditions',
+  'flood': 'get_river_conditions',
+  'streamflow': 'get_river_conditions'
 };
 
 /**
@@ -218,7 +224,8 @@ function isToolName(name: string): name is ToolName {
     'get_air_quality',
     'get_marine_conditions',
     'get_weather_imagery',
-    'get_lightning_activity'
+    'get_lightning_activity',
+    'get_river_conditions'
   ];
   return validTools.includes(name as ToolName);
 }
