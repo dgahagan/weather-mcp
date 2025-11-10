@@ -50,7 +50,12 @@ function calculateDistance(
 
 export class BlitzortungService {
   private client: MqttClient | null = null;
-  private readonly brokerUrl = 'mqtt://blitzortung.ha.sed.pl:1883';
+  // NOTE: Default broker uses unencrypted MQTT (port 1883) as the public Blitzortung
+  // community broker (blitzortung.ha.sed.pl) does not currently support TLS connections.
+  // Lightning data is public information, and location privacy is protected via geohash
+  // subscriptions (precision ~4-40km). For enhanced security, configure BLITZORTUNG_MQTT_URL
+  // environment variable to point to an alternative broker with TLS support (mqtts:// or wss://).
+  private readonly brokerUrl = process.env.BLITZORTUNG_MQTT_URL || 'mqtt://blitzortung.ha.sed.pl:1883';
   private readonly topicPrefix = 'blitzortung/1.1';
   private readonly reconnectPeriod = 5000; // 5 seconds
   private readonly connectTimeout = 30000; // 30 seconds
@@ -58,6 +63,7 @@ export class BlitzortungService {
   // Rolling buffer of recent strikes (last 2 hours)
   private strikeBuffer: Map<string, LightningStrike> = new Map();
   private readonly bufferDuration = 120 * 60 * 1000; // 2 hours in milliseconds
+  private readonly maxBufferSize = 10000; // Maximum strikes to buffer (safety limit)
 
   // Subscription management
   private subscribedGeohashes: Set<string> = new Set();
@@ -181,6 +187,25 @@ export class BlitzortungService {
           converted: timestampMs
         });
         return;
+      }
+
+      // Check buffer size limit before adding (safety bounds checking)
+      if (this.strikeBuffer.size >= this.maxBufferSize) {
+        logger.warn('Lightning strike buffer at capacity, removing oldest entries', {
+          currentSize: this.strikeBuffer.size,
+          maxSize: this.maxBufferSize,
+          securityEvent: true
+        });
+
+        // Remove oldest 10% of entries to make room
+        const entriesToRemove = Math.floor(this.maxBufferSize * 0.1);
+        const iterator = this.strikeBuffer.keys();
+        for (let i = 0; i < entriesToRemove; i++) {
+          const result = iterator.next();
+          if (!result.done) {
+            this.strikeBuffer.delete(result.value);
+          }
+        }
       }
 
       // Add to buffer with unique key
