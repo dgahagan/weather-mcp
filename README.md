@@ -161,6 +161,28 @@ The cache automatically stores and retrieves weather data with intelligent expir
 
 ### Configuration
 
+**For most users: No configuration needed!** The server works out of the box with sensible defaults and requires no API keys.
+
+#### Optional: Environment Variables
+
+To customize server behavior, copy the example configuration file:
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` to adjust settings as needed. See [`.env.example`](./.env.example) for comprehensive documentation on all available options.
+
+**What you can configure:**
+- **Tool Selection** - Choose which MCP tools to expose (basic/standard/full/all presets)
+- **Cache Settings** - Adjust cache size and enable/disable caching
+- **API Configuration** - Set request timeouts
+- **Logging** - Control log verbosity levels
+- **Optional API Tokens** - Add NCEI token for official US climate normals (falls back to free Open-Meteo data)
+- **Lightning Detection** - Configure alternative MQTT broker (optional)
+
+All settings have sensible defaults and can be omitted entirely.
+
 #### Tool Selection (NEW in v1.4.0)
 
 Control which MCP tools are exposed to reduce context overhead and customize functionality. By default, only **basic** tools are enabled.
@@ -174,20 +196,11 @@ Control which MCP tools are exposed to reduce context overhead and customize fun
 **Configuration Examples:**
 
 ```bash
-# Use a preset
-export ENABLED_TOOLS=full
-
-# Select specific tools
-export ENABLED_TOOLS=forecast,current,alerts,air_quality
-
-# Add tools to a preset
-export ENABLED_TOOLS=basic,+historical,+air_quality
-
-# Remove tools from a preset
-export ENABLED_TOOLS=all,-marine
-
-# Complex combinations
-export ENABLED_TOOLS=standard,+air_quality,-alerts
+# In .env file or MCP client config
+ENABLED_TOOLS=full                              # Use a preset
+ENABLED_TOOLS=forecast,current,alerts,air_quality  # Specific tools only
+ENABLED_TOOLS=basic,+historical,+air_quality   # Add to preset
+ENABLED_TOOLS=all,-marine                       # Remove from preset
 ```
 
 **Tool Aliases:**
@@ -198,20 +211,24 @@ Short names are supported: `forecast`, `current`, `conditions`, `alerts`, `warni
 - **Better Security**: Only expose necessary functionality
 - **Customization**: Tailor the server to your specific use case
 
-#### Cache Configuration
+#### MCP Client Configuration
 
-Caching is **enabled by default** with sensible settings. To customize:
+You can also set environment variables directly in your MCP client configuration file instead of using a `.env` file:
 
-```bash
-# Disable caching (not recommended)
-export CACHE_ENABLED=false
-
-# Adjust maximum cache size (default: 1000 entries)
-export CACHE_MAX_SIZE=1500
-
-# Optional: NOAA NCEI API token for official climate normals (US only, NEW in v1.2.0)
-# Falls back to Open-Meteo computed normals if not configured
-export NCEI_API_TOKEN=your_token_here
+```json
+{
+  "mcpServers": {
+    "weather": {
+      "command": "npx",
+      "args": ["-y", "@dangahagan/weather-mcp@latest"],
+      "env": {
+        "ENABLED_TOOLS": "full",
+        "CACHE_MAX_SIZE": "2000",
+        "LOG_LEVEL": "1"
+      }
+    }
+  }
+}
 ```
 
 **Note on Climate Normals (v1.2.0):**
@@ -268,7 +285,7 @@ If you prefer to build from source:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/dgahagan/weather-mcp.git
+git clone https://github.com/weather-mcp/mcp-server.git
 cd weather-mcp
 ```
 
@@ -281,6 +298,14 @@ npm install
 ```bash
 npm run build
 ```
+
+4. (Optional) Configure environment variables:
+```bash
+cp .env.example .env
+# Edit .env to customize settings (all optional)
+```
+
+See the [Configuration](#configuration) section for details.
 
 ## Upgrading to Latest Version
 
@@ -333,7 +358,7 @@ npm run build
 You can verify your installed version by checking:
 - npm: `npm list -g @dangahagan/weather-mcp`
 - Source: `git describe --tags` or check `package.json`
-- Latest release: https://github.com/dgahagan/weather-mcp/releases
+- Latest release: https://github.com/weather-mcp/mcp-server/releases
 
 ## Usage with AI Assistants
 
