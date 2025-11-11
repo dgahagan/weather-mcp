@@ -28,7 +28,7 @@ npm install -g @dangahagan/weather-mcp
 
 Clone and build from source:
 ```bash
-git clone https://github.com/dgahagan/weather-mcp.git
+git clone https://github.com/weather-mcp/mcp-server.git
 cd weather-mcp
 npm install
 npm run build

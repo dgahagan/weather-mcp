@@ -28,7 +28,7 @@ Before you begin:
 2. **npm login** - Run `npm login` in your terminal and verify with `npm whoami`
 3. **GitHub CLI (optional)** - Install via `brew install gh` for faster releases
 4. **mcp-publisher** - Binary should be in project root (see section 5.2)
-5. **GitHub repository** - Public repo at github.com/dgahagan/weather-mcp
+5. **GitHub repository** - Public repo at github.com/weather-mcp/mcp-server
 
 ---
 
@@ -522,7 +522,7 @@ Update **both** version and description (if needed):
       }
     }
   ],
-  "homepage": "https://github.com/dgahagan/weather-mcp",
+  "homepage": "https://github.com/weather-mcp/mcp-server",
   "license": "MIT",
   "categories": ["data", "utilities"],
   "keywords": ["weather", "forecast", "noaa", "open-meteo"]
@@ -645,7 +645,7 @@ gh release create v0.4.0 \
 
 ### Option B: GitHub Web UI
 
-1. Go to https://github.com/dgahagan/weather-mcp/releases
+1. Go to https://github.com/weather-mcp/mcp-server/releases
 2. Click **"Draft a new release"**
 3. Click **"Choose a tag"**
    - If tag exists: select `v0.4.0`
@@ -716,7 +716,7 @@ Add to your MCP client configuration:
 }
 ```
 
-See [CLIENT_SETUP.md](https://github.com/dgahagan/weather-mcp/blob/main/docs/CLIENT_SETUP.md) for all supported clients.
+See [CLIENT_SETUP.md](https://github.com/weather-mcp/mcp-server/blob/main/docs/CLIENT_SETUP.md) for all supported clients.
 
 ### 📊 Technical Details
 
@@ -727,8 +727,8 @@ See [CLIENT_SETUP.md](https://github.com/dgahagan/weather-mcp/blob/main/docs/CLI
 
 ### 📚 Documentation
 
-- [README.md](https://github.com/dgahagan/weather-mcp#readme)
-- [CHANGELOG.md](https://github.com/dgahagan/weather-mcp/blob/main/docs/releases/CHANGELOG.md)
+- [README.md](https://github.com/weather-mcp/mcp-server#readme)
+- [CHANGELOG.md](https://github.com/weather-mcp/mcp-server/blob/main/docs/releases/CHANGELOG.md)
 - Full release notes in CHANGELOG
 
 ### 🙏 Contributing
@@ -737,7 +737,7 @@ Contributions welcome! Please submit issues or pull requests.
 
 ### 📄 License
 
-MIT License - see [LICENSE](https://github.com/dgahagan/weather-mcp/blob/main/LICENSE)
+MIT License - see [LICENSE](https://github.com/weather-mcp/mcp-server/blob/main/LICENSE)
 ````
 
 ---
@@ -1039,7 +1039,7 @@ npx @dangahagan/weather-mcp@latest
 ```
 
 **Check published documentation:**
-1. Visit https://github.com/dgahagan/weather-mcp/blob/main/README.md
+1. Visit https://github.com/weather-mcp/mcp-server/blob/main/README.md
 2. Verify version badges show correct version (if present)
 3. Verify test counts are accurate (446 tests)
 4. Verify all documentation links work

@@ -13,7 +13,7 @@ There are three main MCP registries:
 ## Prerequisites Completed ✅
 
 - [x] npm package published: `@dangahagan/weather-mcp` (v0.1.1 with mcpName field)
-- [x] GitHub repository public: https://github.com/dgahagan/weather-mcp
+- [x] GitHub repository public: https://github.com/weather-mcp/mcp-server
 - [x] GitHub release created: v0.1.1
 - [x] `server.json` configuration file added (updated to 2025-10-17 schema)
 
@@ -122,7 +122,7 @@ Smithery is ideal for:
    - **Package Type:** npm
    - **Package Name:** `@dangahagan/weather-mcp`
    - **Description:** Copy from README
-   - **Homepage:** https://github.com/dgahagan/weather-mcp
+   - **Homepage:** https://github.com/weather-mcp/mcp-server
 4. **Submit** for approval
 
 #### Option 2: Smithery-Managed Deployment
@@ -184,7 +184,7 @@ Glama automatically aggregates servers from other registries, but you can also s
 2. **Click:** "Submit Server" (if available)
 3. **Provide:**
    - npm package: `@dangahagan/weather-mcp`
-   - GitHub repo: https://github.com/dgahagan/weather-mcp
+   - GitHub repo: https://github.com/weather-mcp/mcp-server
    - Description and details
 
 **OR** wait for automatic indexing once you're in GitHub MCP Registry or Smithery.
