@@ -64,7 +64,7 @@
   },
   "devDependencies": {
     "@types/luxon": "^3.7.1",
-    "@types/mqtt": "^0.0.34",
+    "@types/mqtt": "^2.5.0",
     "@types/ngeohash": "^0.6.8",
     "@types/node": "^24.10.0",
     "@vitest/coverage-v8": "^4.0.8",
