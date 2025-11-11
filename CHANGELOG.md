@@ -1002,16 +1002,16 @@ With v1.4.0 tool configuration system, users have full control:
 - MCP server implementation
 - Claude Code integration
 
-[Unreleased]: https://github.com/weather-mcp/mcp-server/compare/v1.4.0...HEAD
-[1.4.0]: https://github.com/weather-mcp/mcp-server/compare/v1.3.0...v1.4.0
-[1.3.0]: https://github.com/weather-mcp/mcp-server/compare/v1.2.1...v1.3.0
-[1.2.1]: https://github.com/weather-mcp/mcp-server/compare/v1.2.0...v1.2.1
-[1.2.0]: https://github.com/weather-mcp/mcp-server/compare/v1.1.0...v1.2.0
-[1.1.0]: https://github.com/weather-mcp/mcp-server/compare/v1.0.1...v1.1.0
-[1.0.1]: https://github.com/weather-mcp/mcp-server/compare/v1.0.0...v1.0.1
-[1.0.0]: https://github.com/weather-mcp/mcp-server/compare/v0.5.0...v1.0.0
-[0.5.0]: https://github.com/weather-mcp/mcp-server/compare/v0.4.0...v0.5.0
-[0.4.0]: https://github.com/weather-mcp/mcp-server/compare/v0.3.0...v0.4.0
-[0.3.0]: https://github.com/weather-mcp/mcp-server/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/weather-mcp/mcp-server/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/weather-mcp/mcp-server/releases/tag/v0.1.0
+[Unreleased]: https://github.com/weather-mcp/weather-mcp/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/weather-mcp/weather-mcp/compare/v1.3.0...v1.4.0
+[1.3.0]: https://github.com/weather-mcp/weather-mcp/compare/v1.2.1...v1.3.0
+[1.2.1]: https://github.com/weather-mcp/weather-mcp/compare/v1.2.0...v1.2.1
+[1.2.0]: https://github.com/weather-mcp/weather-mcp/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/weather-mcp/weather-mcp/compare/v1.0.1...v1.1.0
+[1.0.1]: https://github.com/weather-mcp/weather-mcp/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/weather-mcp/weather-mcp/compare/v0.5.0...v1.0.0
+[0.5.0]: https://github.com/weather-mcp/weather-mcp/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/weather-mcp/weather-mcp/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/weather-mcp/weather-mcp/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/weather-mcp/weather-mcp/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/weather-mcp/weather-mcp/releases/tag/v0.1.0

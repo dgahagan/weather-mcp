@@ -493,7 +493,7 @@ v0.4.0 implementation complete as specified in ROADMAP.md:
 - **[0.2.0]** - 2025-11-05 - Added caching support
 - **[0.1.0]** - 2025-11-05 - Initial public release
 
-[0.4.0]: https://github.com/weather-mcp/mcp-server/releases/tag/v0.4.0
-[0.3.0]: https://github.com/weather-mcp/mcp-server/releases/tag/v0.3.0
-[0.2.0]: https://github.com/weather-mcp/mcp-server/releases/tag/v0.2.0
-[0.1.0]: https://github.com/weather-mcp/mcp-server/releases/tag/v0.1.0
+[0.4.0]: https://github.com/weather-mcp/weather-mcp/releases/tag/v0.4.0
+[0.3.0]: https://github.com/weather-mcp/weather-mcp/releases/tag/v0.3.0
+[0.2.0]: https://github.com/weather-mcp/weather-mcp/releases/tag/v0.2.0
+[0.1.0]: https://github.com/weather-mcp/weather-mcp/releases/tag/v0.1.0

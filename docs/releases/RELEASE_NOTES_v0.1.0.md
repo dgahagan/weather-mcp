@@ -25,7 +25,7 @@ npx -y @dangahagan/weather-mcp
 
 #### From source
 ```bash
-git clone https://github.com/weather-mcp/mcp-server.git
+git clone https://github.com/weather-mcp/weather-mcp.git
 cd weather-mcp
 npm install
 npm run build
@@ -104,6 +104,6 @@ MIT License - see [LICENSE](./LICENSE) for details
 
 **Links:**
 - 📦 npm package: https://www.npmjs.com/package/@dangahagan/weather-mcp
-- 🐙 Repository: https://github.com/weather-mcp/mcp-server
-- 📝 Issues: https://github.com/weather-mcp/mcp-server/issues
-- 📖 Documentation: https://github.com/weather-mcp/mcp-server#readme
+- 🐙 Repository: https://github.com/weather-mcp/weather-mcp
+- 📝 Issues: https://github.com/weather-mcp/weather-mcp/issues
+- 📖 Documentation: https://github.com/weather-mcp/weather-mcp#readme

@@ -23,8 +23,8 @@ export async function handleCheckServiceStatus(
   if (serverVersion) {
     output += `## Server Version\n\n`;
     output += `**Installed Version:** ${serverVersion}\n`;
-    output += `**Latest Release:** https://github.com/weather-mcp/mcp-server/releases/latest\n`;
-    output += `**Changelog:** https://github.com/weather-mcp/mcp-server/blob/main/CHANGELOG.md\n`;
+    output += `**Latest Release:** https://github.com/weather-mcp/weather-mcp/releases/latest\n`;
+    output += `**Changelog:** https://github.com/weather-mcp/weather-mcp/blob/main/CHANGELOG.md\n`;
     output += `**Upgrade Instructions:** See README.md "Upgrading to Latest Version" section\n\n`;
     output += `*Tip: Use \`npx -y @dangahagan/weather-mcp@latest\` in your MCP config to always run the newest version.*\n\n`;
   }

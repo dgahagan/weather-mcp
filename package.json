@@ -46,13 +46,13 @@
   ],
   "author": "Dan Gahagan",
   "license": "MIT",
-  "homepage": "https://github.com/weather-mcp/mcp-server#readme",
+  "homepage": "https://github.com/weather-mcp/weather-mcp#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/weather-mcp/mcp-server.git"
+    "url": "git+https://github.com/weather-mcp/weather-mcp.git"
   },
   "bugs": {
-    "url": "https://github.com/weather-mcp/mcp-server/issues"
+    "url": "https://github.com/weather-mcp/weather-mcp/issues"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.21.1",

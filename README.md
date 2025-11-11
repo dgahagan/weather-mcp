@@ -285,7 +285,7 @@ If you prefer to build from source:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/weather-mcp/mcp-server.git
+git clone https://github.com/weather-mcp/weather-mcp.git
 cd weather-mcp
 ```
 
@@ -358,7 +358,7 @@ npm run build
 You can verify your installed version by checking:
 - npm: `npm list -g @dangahagan/weather-mcp`
 - Source: `git describe --tags` or check `package.json`
-- Latest release: https://github.com/weather-mcp/mcp-server/releases
+- Latest release: https://github.com/weather-mcp/weather-mcp/releases
 
 ## Usage with AI Assistants
 

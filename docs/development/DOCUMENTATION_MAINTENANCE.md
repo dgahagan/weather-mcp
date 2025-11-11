@@ -162,7 +162,7 @@ git branch --show-current
 
 2. **Update links section** at bottom:
    ```markdown
-   [X.Y.Z]: https://github.com/weather-mcp/mcp-server/compare/vPREV...vX.Y.Z
+   [X.Y.Z]: https://github.com/weather-mcp/weather-mcp/compare/vPREV...vX.Y.Z
    ```
 
 3. **Move `[Unreleased]` items** to new version section
@@ -370,7 +370,7 @@ git tag -l
 npm view @dangahagan/weather-mcp version
 
 # Check GitHub releases
-open https://github.com/weather-mcp/mcp-server/releases
+open https://github.com/weather-mcp/weather-mcp/releases
 
 # Verify MCP registry listing (if applicable)
 open https://registry.modelcontextprotocol.io/v0/servers?search=io.github.dgahagan/weather-mcp
@@ -1410,7 +1410,7 @@ These files should be created per major version:
 
 This is a living document. If you find issues or have suggestions for improvement:
 
-1. Open an issue: https://github.com/weather-mcp/mcp-server/issues
+1. Open an issue: https://github.com/weather-mcp/weather-mcp/issues
 2. Submit a PR with improvements
 3. Discuss in team meetings
 
