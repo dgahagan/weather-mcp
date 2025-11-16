@@ -49,7 +49,7 @@ export async function handleSearchLocation(
 
   const query = locationArgs.query.trim();
   const limit = typeof locationArgs.limit === 'number' ?
-    Math.min(Math.max(1, locationArgs.limit), 100) : 5;
+    Math.min(Math.max(1, locationArgs.limit), 50) : 5; // Nominatim max is 50
 
   // Search for locations using multi-service geocoding
   const results = await geocodingService.geocode(query, limit);
