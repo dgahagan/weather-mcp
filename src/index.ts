@@ -574,6 +574,21 @@ const TOOL_DEFINITIONS = {
         name: {
           type: 'string' as const,
           description: 'Display name for the location (required when using latitude/longitude). E.g., "My Home in Seattle"'
+        },
+        description: {
+          type: 'string' as const,
+          description: 'Short description for natural language matching (e.g., "My sister\'s house", "The lake house"). Helps Claude understand contextual references.'
+        },
+        alternateNames: {
+          type: 'array' as const,
+          description: 'Alternate names/aliases for this location (e.g., ["sister\'s place", "Jane\'s house"]). Enables more natural language queries.',
+          items: {
+            type: 'string' as const
+          }
+        },
+        notes: {
+          type: 'string' as const,
+          description: 'Freeform notes about this location for future reference'
         }
       },
       required: ['alias']

@@ -12,6 +12,9 @@ interface SaveLocationArgs {
   latitude?: number;
   longitude?: number;
   name?: string;
+  description?: string;
+  alternateNames?: string[];
+  notes?: string;
 }
 
 interface GetLocationArgs {
@@ -132,7 +135,10 @@ export async function handleSaveLocation(
     timezone,
     country_code,
     admin1,
-    admin2
+    admin2,
+    description: saveArgs.description,
+    alternateNames: saveArgs.alternateNames,
+    notes: saveArgs.notes
   });
 
   let output = `# ${isUpdate ? 'Updated' : 'Saved'} Location\n\n`;
@@ -150,6 +156,18 @@ export async function handleSaveLocation(
 
   if (admin1) {
     output += `**Region:** ${escapeMarkdown(admin1)}\n`;
+  }
+
+  if (saveArgs.description) {
+    output += `**Description:** ${escapeMarkdown(saveArgs.description)}\n`;
+  }
+
+  if (saveArgs.alternateNames && saveArgs.alternateNames.length > 0) {
+    output += `**Alternate Names:** ${saveArgs.alternateNames.map(escapeMarkdown).join(', ')}\n`;
+  }
+
+  if (saveArgs.notes) {
+    output += `**Notes:** ${escapeMarkdown(saveArgs.notes)}\n`;
   }
 
   output += `\n`;
@@ -208,6 +226,14 @@ export async function handleListSavedLocations(
     output += `**Name:** ${escapeMarkdown(location.name)}\n`;
     output += `**Coordinates:** ${location.latitude.toFixed(4)}°, ${location.longitude.toFixed(4)}°\n`;
 
+    if (location.description) {
+      output += `**Description:** ${escapeMarkdown(location.description)}\n`;
+    }
+
+    if (location.alternateNames && location.alternateNames.length > 0) {
+      output += `**Alternate Names:** ${location.alternateNames.map(escapeMarkdown).join(', ')}\n`;
+    }
+
     if (location.timezone) {
       output += `**Timezone:** ${location.timezone}\n`;
     }
@@ -218,6 +244,10 @@ export async function handleListSavedLocations(
 
     if (location.admin1) {
       output += `**Region:** ${escapeMarkdown(location.admin1)}\n`;
+    }
+
+    if (location.notes) {
+      output += `**Notes:** ${escapeMarkdown(location.notes)}\n`;
     }
 
     output += `**Saved:** ${new Date(location.saved_at).toLocaleDateString()}\n`;
@@ -279,6 +309,14 @@ export async function handleGetSavedLocation(
   output += `**Name:** ${escapeMarkdown(location.name)}\n`;
   output += `**Coordinates:** ${location.latitude.toFixed(4)}°, ${location.longitude.toFixed(4)}°\n`;
 
+  if (location.description) {
+    output += `**Description:** ${escapeMarkdown(location.description)}\n`;
+  }
+
+  if (location.alternateNames && location.alternateNames.length > 0) {
+    output += `**Alternate Names:** ${location.alternateNames.map(escapeMarkdown).join(', ')}\n`;
+  }
+
   if (location.timezone) {
     output += `**Timezone:** ${location.timezone}\n`;
   }
@@ -293,6 +331,10 @@ export async function handleGetSavedLocation(
 
   if (location.admin2) {
     output += `**County:** ${escapeMarkdown(location.admin2)}\n`;
+  }
+
+  if (location.notes) {
+    output += `**Notes:** ${escapeMarkdown(location.notes)}\n`;
   }
 
   output += `**Saved:** ${new Date(location.saved_at).toLocaleString()}\n`;

@@ -18,6 +18,7 @@ dist/
 # User data (contains personal information)
 locations.json
 .weather-mcp/
+saved-forecasts/
 
 # IDE
 .vscode/

@@ -20,6 +20,12 @@ export interface SavedLocation {
   admin1?: string;
   /** County or equivalent */
   admin2?: string;
+  /** Short description for natural language matching (e.g., "My sister's house") */
+  description?: string;
+  /** Alternate names/aliases for this location (e.g., ["sister's place", "Jane's house"]) */
+  alternateNames?: string[];
+  /** Freeform notes about this location */
+  notes?: string;
   /** When this location was saved */
   saved_at: string;
   /** When this location was last updated */

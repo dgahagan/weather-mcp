@@ -26,7 +26,11 @@ export type ToolName =
   | 'get_weather_imagery'
   | 'get_lightning_activity'
   | 'get_river_conditions'
-  | 'get_wildfire_info';
+  | 'get_wildfire_info'
+  | 'save_location'
+  | 'list_saved_locations'
+  | 'get_saved_location'
+  | 'remove_saved_location';
 
 /**
  * Tool presets for easy configuration
@@ -38,7 +42,11 @@ const TOOL_PRESETS: Record<string, ToolName[]> = {
     'get_current_conditions',
     'get_alerts',
     'search_location',
-    'check_service_status'
+    'check_service_status',
+    'save_location',
+    'list_saved_locations',
+    'get_saved_location',
+    'remove_saved_location'
   ],
 
   // Basic + historical data
@@ -48,7 +56,11 @@ const TOOL_PRESETS: Record<string, ToolName[]> = {
     'get_alerts',
     'get_historical_weather',
     'search_location',
-    'check_service_status'
+    'check_service_status',
+    'save_location',
+    'list_saved_locations',
+    'get_saved_location',
+    'remove_saved_location'
   ],
 
   // Standard + environmental data
@@ -59,7 +71,11 @@ const TOOL_PRESETS: Record<string, ToolName[]> = {
     'get_historical_weather',
     'search_location',
     'check_service_status',
-    'get_air_quality'
+    'get_air_quality',
+    'save_location',
+    'list_saved_locations',
+    'get_saved_location',
+    'remove_saved_location'
   ],
 
   // All available tools
@@ -75,7 +91,11 @@ const TOOL_PRESETS: Record<string, ToolName[]> = {
     'get_weather_imagery',
     'get_lightning_activity',
     'get_river_conditions',
-    'get_wildfire_info'
+    'get_wildfire_info',
+    'save_location',
+    'list_saved_locations',
+    'get_saved_location',
+    'remove_saved_location'
   ]
 };
 
@@ -233,7 +253,11 @@ function isToolName(name: string): name is ToolName {
     'get_weather_imagery',
     'get_lightning_activity',
     'get_river_conditions',
-    'get_wildfire_info'
+    'get_wildfire_info',
+    'save_location',
+    'list_saved_locations',
+    'get_saved_location',
+    'remove_saved_location'
   ];
   return validTools.includes(name as ToolName);
 }

@@ -38,7 +38,29 @@ export function resolveLocation(
       throw new Error('location_name cannot be empty');
     }
 
-    const savedLocation = locationStore.get(locationName);
+    // Try exact alias match first
+    let savedLocation = locationStore.get(locationName);
+    let matchedAlias = locationName;
+
+    // If not found, try matching against alternate names
+    if (!savedLocation) {
+      const allLocations = locationStore.getAll();
+
+      for (const [alias, location] of Object.entries(allLocations)) {
+        // Check if query matches any alternate names
+        if (location.alternateNames && location.alternateNames.length > 0) {
+          const normalizedAlternates = location.alternateNames.map(name =>
+            name.toLowerCase().trim()
+          );
+
+          if (normalizedAlternates.includes(locationName)) {
+            savedLocation = location;
+            matchedAlias = alias;
+            break;
+          }
+        }
+      }
+    }
 
     if (!savedLocation) {
       const available = Object.keys(locationStore.getAll());
@@ -55,7 +77,7 @@ export function resolveLocation(
       latitude: savedLocation.latitude,
       longitude: savedLocation.longitude,
       source: 'saved_location',
-      location_name: locationName
+      location_name: matchedAlias
     };
   }
 
