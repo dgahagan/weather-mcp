@@ -30,6 +30,13 @@ An MCP (Model Context Protocol) server that provides **global weather data** to 
   - Support for cities, airports, landmarks, and regions globally
   - Detailed metadata: timezone, elevation, population, country
   - Enables natural language queries: "What's the weather in Tokyo?"
+- **Saved Locations**: Save and reuse favorite locations (NEW in v1.7.0)
+  - Save frequently used locations with simple aliases ("home", "work", "cabin")
+  - Use saved locations by name instead of coordinates in all weather tools
+  - Automatic geocoding when saving (just provide location name)
+  - Persistent storage in `~/.weather-mcp/locations.json`
+  - Manage locations: save, list, view details, remove
+  - Makes queries natural: "What's the weather at home?" instead of providing coordinates
 - **Climate Normals - Historical Context**: Compare weather to 30-year averages (NEW in v1.2.0)
   - **Optional enhancement** for current conditions and forecasts (`include_normals=true`)
   - Shows normal high/low temperatures and precipitation for comparison
@@ -191,7 +198,7 @@ Control which MCP tools are exposed to reduce context overhead and customize fun
 - `basic` (default): Essential weather tools (5 tools) - forecast, current_conditions, alerts, search_location, check_service_status
 - `standard`: Basic + historical_weather (6 tools)
 - `full`: Standard + air_quality (7 tools)
-- `all`: All available tools (12 tools) - includes marine_conditions, weather_imagery, lightning_activity, river_conditions, wildfire_info
+- `all`: All available tools (16 tools) - includes marine_conditions, weather_imagery, lightning_activity, river_conditions, wildfire_info, save_location, list_saved_locations, get_saved_location, remove_saved_location
 
 **Configuration Examples:**
 
@@ -819,6 +826,121 @@ Provides critical wildfire monitoring and safety information using NIFC (Nationa
 - Evacuation recommendations and safety guidance
 
 **Note:** Data from NIFC WFIGS (Wildland Fire Interagency Geospatial Services). Always consult official sources for evacuation orders at https://inciweb.nwcg.gov/
+
+### 13. save_location (NEW in v1.7.0)
+Save a location with an alias for easy reuse in weather queries.
+
+**Parameters:**
+- `alias` (required): Short name for the location (e.g., "home", "work", "cabin"). Max 50 characters.
+- `location_query` (optional): Location to geocode and save (e.g., "Seattle, WA", "Paris, France"). Not required if latitude/longitude provided.
+- `latitude` (optional): Latitude if providing coordinates directly. Not required if location_query provided.
+- `longitude` (optional): Longitude if providing coordinates directly. Not required if location_query provided.
+- `name` (optional): Display name (required when using latitude/longitude directly)
+
+**Description:**
+Saves a location to persistent storage (`~/.weather-mcp/locations.json`) for easy reuse. Accepts either a location query (which will be automatically geocoded using Nominatim/OpenStreetMap) or direct coordinates. Once saved, the location can be used in any weather tool by providing `location_name` instead of coordinates.
+
+**Examples:**
+```
+"Save my home location in Seattle, WA"
+  → save_location(alias="home", location_query="Seattle, WA")
+
+"Save the cabin at Lake Tahoe"
+  → save_location(alias="cabin", location_query="Lake Tahoe, CA")
+
+"Save coordinates 47.6062, -122.3321 as my office"
+  → save_location(alias="office", latitude=47.6062, longitude=-122.3321, name="Seattle Office")
+```
+
+**Returns:**
+- Confirmation of save with location details
+- Coordinates, timezone, and administrative region
+- Usage examples showing how to use with weather tools
+
+### 14. list_saved_locations (NEW in v1.7.0)
+View all saved locations.
+
+**Parameters:** None
+
+**Description:**
+Lists all locations saved in your persistent storage with their aliases, names, coordinates, and save dates. Helpful for seeing what location names are available for use with weather tools.
+
+**Examples:**
+```
+"Show my saved locations"
+"What locations do I have saved?"
+"List all my saved places"
+```
+
+**Returns:**
+- List of all saved locations with full details
+- Usage examples for each location
+- Total count of saved locations
+
+### 15. get_saved_location (NEW in v1.7.0)
+Get details for a specific saved location.
+
+**Parameters:**
+- `alias` (required): The name of the saved location to retrieve (e.g., "home", "work")
+
+**Description:**
+Retrieves detailed information about a specific saved location, including coordinates, timezone, region information, and save/update timestamps.
+
+**Examples:**
+```
+"Show details for my home location"
+"What are the coordinates for my cabin?"
+"Get info about my work location"
+```
+
+**Returns:**
+- Location name and coordinates
+- Timezone and administrative regions
+- Save and update timestamps
+- Usage examples
+
+### 16. remove_saved_location (NEW in v1.7.0)
+Remove a saved location.
+
+**Parameters:**
+- `alias` (required): The name of the saved location to remove (e.g., "home", "work")
+
+**Description:**
+Permanently removes a saved location from storage. The location data is deleted and can no longer be used with weather tools unless saved again.
+
+**Examples:**
+```
+"Remove my work location"
+"Delete the cabin from saved locations"
+"Remove home"
+```
+
+**Returns:**
+- Confirmation of removal
+- Count of remaining saved locations
+
+## Using Saved Locations with Weather Tools
+
+Once you've saved locations, you can use them with any weather tool by providing `location_name` instead of coordinates:
+
+**Examples:**
+```
+# Instead of:
+get_forecast(latitude=47.6062, longitude=-122.3321)
+
+# You can use:
+get_forecast(location_name="home")
+
+# Natural language queries work too:
+"What's the weather forecast at home?"
+"How's the air quality at my cabin?"
+"Are there any weather alerts for my work location?"
+```
+
+**Currently Supported Tools:**
+- `get_forecast` - Weather forecasts using saved locations
+
+**Coming Soon:** Support for saved locations in all weather tools (current conditions, alerts, air quality, marine conditions, etc.)
 
 ## Error Handling & Service Status
 
