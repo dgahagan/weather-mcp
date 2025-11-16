@@ -18,6 +18,7 @@ import { NOAAService } from './services/noaa.js';
 import { OpenMeteoService } from './services/openmeteo.js';
 import { NCEIService } from './services/ncei.js';
 import { NIFCService } from './services/nifc.js';
+import { GeocodingService } from './services/geocoding.js';
 import { CacheConfig } from './config/cache.js';
 import { toolConfig } from './config/tools.js';
 import { logger } from './utils/logger.js';
@@ -107,6 +108,13 @@ const nceiService = new NCEIService();
  * No API key required - uses public ArcGIS REST API
  */
 const nifcService = new NIFCService();
+
+/**
+ * Initialize the Geocoding service with multi-provider support
+ * No API key required - uses Census.gov, Nominatim, and Open-Meteo
+ * Automatic fallback strategy for maximum reliability
+ */
+const geocodingService = new GeocodingService();
 
 /**
  * Create MCP server instance
@@ -564,7 +572,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'search_location':
         return await withAnalytics('search_location', async () =>
-          handleSearchLocation(args, openMeteoService)
+          handleSearchLocation(args, geocodingService)
         );
 
       case 'get_air_quality':
