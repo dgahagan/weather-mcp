@@ -1,9 +1,9 @@
 /**
  * Handler for search_location tool
+ * Now uses multi-service geocoding with automatic fallback
  */
 
-import { OpenMeteoService } from '../services/openmeteo.js';
-import { DataNotFoundError } from '../errors/ApiError.js';
+import { GeocodingService } from '../services/geocoding.js';
 
 interface LocationArgs {
   query?: string;
@@ -38,7 +38,7 @@ function escapeMarkdown(text: string): string {
 
 export async function handleSearchLocation(
   args: unknown,
-  openMeteoService: OpenMeteoService
+  geocodingService: GeocodingService
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
   // Validate input parameters
   const locationArgs = args as LocationArgs;
@@ -51,28 +51,18 @@ export async function handleSearchLocation(
   const limit = typeof locationArgs.limit === 'number' ?
     Math.min(Math.max(1, locationArgs.limit), 100) : 5;
 
-  // Search for locations
-  const response = await openMeteoService.searchLocation(query, limit);
-
-  if (!response.results || response.results.length === 0) {
-    throw new DataNotFoundError(
-      'OpenMeteo',
-      `No locations found matching "${query}". Try:\n` +
-      `- Using a different spelling\n` +
-      `- Being more specific (e.g., "Paris, France" instead of "Paris")\n` +
-      `- Using a nearby city or landmark`
-    );
-  }
+  // Search for locations using multi-service geocoding
+  const results = await geocodingService.geocode(query, limit);
 
   // Format the results for display
   let output = `# Location Search Results\n\n`;
   // Escape user query to prevent Markdown injection
   output += `**Query:** "${escapeMarkdown(query)}"\n`;
-  output += `**Found:** ${response.results.length} location${response.results.length > 1 ? 's' : ''}\n\n`;
+  output += `**Found:** ${results.length} location${results.length > 1 ? 's' : ''}\n\n`;
   output += `---\n\n`;
 
-  for (let i = 0; i < response.results.length; i++) {
-    const location = response.results[i];
+  for (let i = 0; i < results.length; i++) {
+    const location = results[i];
     output += `## ${i + 1}. ${location.name}\n\n`;
 
     // Build location description
@@ -81,7 +71,7 @@ export async function handleSearchLocation(
     if (location.admin2 && location.admin2 !== location.admin1) parts.push(location.admin2);
     if (location.country) parts.push(location.country);
 
-    output += `**Full Name:** ${parts.join(', ')}\n`;
+    output += `**Full Name:** ${location.display_name}\n`;
     output += `**Coordinates:** ${location.latitude.toFixed(4)}°, ${location.longitude.toFixed(4)}°\n`;
 
     if (location.country_code) {
@@ -108,19 +98,25 @@ export async function handleSearchLocation(
       }
     }
 
+    // Show confidence and source
+    const confidenceEmoji = location.confidence === 'high' ? '✅' :
+                           location.confidence === 'medium' ? '⚡' : '⚠️';
+    output += `**Confidence:** ${confidenceEmoji} ${location.confidence.charAt(0).toUpperCase() + location.confidence.slice(1)}\n`;
+    output += `**Data Source:** ${getSourceName(location.source)}\n`;
+
     output += `\n`;
 
     // Add usage example
     output += `*To get weather for this location, use these coordinates:*\n`;
     output += `*Latitude: ${location.latitude}, Longitude: ${location.longitude}*\n\n`;
 
-    if (i < response.results.length - 1) {
+    if (i < results.length - 1) {
       output += `---\n\n`;
     }
   }
 
   output += `---\n`;
-  output += `*Data source: Open-Meteo Geocoding API*\n`;
+  output += `*Multi-service geocoding with automatic fallback (Census.gov, Nominatim, Open-Meteo)*\n`;
 
   return {
     content: [
@@ -130,6 +126,18 @@ export async function handleSearchLocation(
       }
     ]
   };
+}
+
+/**
+ * Get friendly source name for display
+ */
+function getSourceName(source: string): string {
+  switch (source) {
+    case 'census': return 'US Census Bureau';
+    case 'nominatim': return 'OpenStreetMap Nominatim';
+    case 'openmeteo': return 'Open-Meteo';
+    default: return source;
+  }
 }
 
 /**
